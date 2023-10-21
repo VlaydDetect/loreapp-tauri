@@ -1,0 +1,141 @@
+{
+    "build": {
+        "beforeDevCommand": "npm run dev",
+        "beforeBuildCommand": "npm run build",
+        "devPath": "http://localhost:3000",
+        "distDir": "../dist",
+        "withGlobalTauri": false
+    },
+    "package": {
+        "productName": "loreapp-tauri",
+        "version": "0.0.0"
+    },
+    "tauri": {
+        "allowlist": {
+            "all": false,
+            "protocol": {
+                "all": true,
+                "asset": true,
+                "assetScope": ["**"]
+            },
+            "shell": {
+                "all": true,
+                "execute": true,
+                "open": ".*",
+                "scope": [],
+                "sidecar": true
+            },
+            "fs": {
+                "all": true,
+                "copyFile": true,
+                "createDir": true,
+                "exists": true,
+                "readDir": true,
+                "readFile": true,
+                "removeDir": true,
+                "removeFile": true,
+                "renameFile": true,
+                "scope": [
+                    "$APP/*",
+                    "$DOCUMENT/*",
+                    "$DOWNLOAD/*"
+                ],
+                "writeFile": true
+            },
+            "dialog": {
+                "all": true,
+                "ask": true,
+                "confirm": true,
+                "message": true,
+                "open": true,
+                "save": true
+            },
+            "notification": {
+                "all": true
+            },
+            "os": {
+                "all": true
+            },
+            "path": {
+                "all": true
+            },
+            "window": {
+                "all": true,
+                "center": true,
+                "close": true,
+                "create": false,
+                "hide": false,
+                "maximize": true,
+                "minimize": true,
+                "print": false,
+                "requestUserAttention": false,
+                "setAlwaysOnTop": false,
+                "setCursorGrab": false,
+                "setCursorIcon": false,
+                "setCursorPosition": false,
+                "setCursorVisible": false,
+                "setDecorations": true,
+                "setFocus": true,
+                "setFullscreen": true,
+                "setIcon": false,
+                "setMaxSize": false,
+                "setMinSize": false,
+                "setPosition": false,
+                "setResizable": false,
+                "setSize": true,
+                "setSkipTaskbar": false,
+                "setTitle": false,
+                "show": false,
+                "startDragging": true,
+                "unmaximize": true,
+                "unminimize": true
+            }
+        },
+        "bundle": {
+            "active": true,
+            "targets": "all",
+            "identifier": "loreapp",
+            "icon": [
+                "icons/32x32.png",
+                "icons/128x128.png",
+                "icons/128x128@2x.png",
+                "icons/icon.icns",
+                "icons/icon.ico"
+            ],
+            "windows": {
+                "certificateThumbprint": null,
+                "digestAlgorithm": "sha256",
+                "timestampUrl": null
+            }
+        },
+        "security": {
+            "csp": "default-src 'self'; img-src 'self' asset: https://asset.localhost; media-src 'self' asset: https://asset.localhost"
+        },
+        "systemTray": {
+            "iconPath": "icons/tray.png",
+            "iconAsTemplate": true
+        },
+        "updater": {
+            "active": false,
+            "dialog": false,
+            "endpoints": [
+                "http://[::1]:5000/products/release/loreapp-desktop/{{target}}/{{current_version}}",
+                "https://vlcorp.ru/products/release/loreapp-desktop/{{target}}/{{current_version}}"
+            ],
+            "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDdDRkY0MEEzMjM0RTAxQzMKUldUREFVNGpvMEQvZkxaNjhHU0svenZPcTRvY3lLT3lhTTZ1V0ZkSjJaU3psaDZPdXFMT25WL0cK"
+        },
+        "windows": [
+            {
+                "title": "loreapp",
+                "label": "main",
+                "minWidth": 800,
+                "minHeight": 600,
+                "fullscreen": false,
+                "resizable": true,
+                "decorations": true,
+                "width": 800,
+                "height": 600
+            }
+        ]
+    }
+}

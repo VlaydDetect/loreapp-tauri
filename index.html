@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Tauri + React + TS</title>
+    </head>
+
+    <body>
+        <div id="root"></div>
+        <script type="module" src="/src/main.tsx"></script>
+        <script type="module">
+            import { listen } from "@tauri-apps/api/event";
+            import { appWindow } from "@tauri-apps/api/window";
+            await listen('newInstance', ({ payload, ...eventObj }) => {
+                appWindow.unminimize().then(() => appWindow.setFocus())
+                let args = payload?.args
+                let cwd = payload?.cwd
+                if (args.length > 1) {}
+            })
+        </script>
+
+    </body>
+</html>
