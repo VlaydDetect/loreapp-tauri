@@ -8,7 +8,7 @@ import { appWindow } from '@tauri-apps/api/window';
 import { WindowTitlebar } from "@/components/WindowTitlebar";
 import { APP_NAME } from '@/utils/utils';
 
-const WIN32_CUSTOM_TITLEBAR = true
+const WIN32_CUSTOM_TITLEBAR = false;
 
 // NOTE: Add cacheable Tauri calls in this file
 //       this you want to use synchronously across components in your app

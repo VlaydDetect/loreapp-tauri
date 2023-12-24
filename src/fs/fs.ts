@@ -16,7 +16,7 @@ export const ImageFilter: DialogFilter = {
 //#endregion ---------- /Constants ----------
 
 //#region    ---------- Interfaces ----------
-interface IChooseDir {
+interface IChooseOptions {
     multiple?: boolean,
     defaultPath?: string,
     filters?: DialogFilter[]
@@ -61,7 +61,24 @@ export async function createDirectory({path, recursive = false, inBaseDir = fals
     }
 }
 
-export async function chooseDirectoryDialog({multiple = false, defaultPath, filters}: IChooseDir): Promise<null | string | string[]> {
+export async function choosePictureFile(multiple = false, defaultPath?: string): Promise<null | string | string[]> {
+    return chooseFileDialog({multiple, defaultPath, filters: [ImageFilter]})
+}
+
+export async function chooseFileDialog({multiple = false, defaultPath, filters}: IChooseOptions): Promise<null | string | string[]> {
+    if (!defaultPath) {
+        defaultPath = await desktopDir()
+    }
+
+    return openDialog({
+        directory: false,
+        multiple,
+        defaultPath,
+        filters
+    })
+}
+
+export async function chooseDirectoryDialog({multiple = false, defaultPath, filters}: IChooseOptions): Promise<null | string | string[]> {
     if (!defaultPath) {
         defaultPath = await desktopDir()
     }
@@ -113,10 +130,6 @@ export async function updateCache(cache: 'gallery' | 'documents', data: string) 
         case "gallery": return ipcInvoke<string>("update_gallery_cache", {data});
         case "documents": return ipcInvoke<string>("update_documents_cache", {data});
     }
-}
-
-export async function list_pictures() {
-
 }
 //#endregion ---------- /Tauri Events ----------
 

@@ -4,4 +4,4 @@ import type { EditorSettings } from "./EditorSettings";
 import type { LabelValue } from "./LabelValue";
 import type { SortBy } from "./SortBy";
 
-export interface AppSettings { editorMode: EditorMode, editor: EditorSettings, sortBy: SortBy, galleryPath: string, documentsPath: string, categories: Array<LabelValue>, tags: Array<LabelValue>, }
+export interface AppSettings { editorMode: EditorMode, editor: EditorSettings, sortBy: SortBy, categories: Array<LabelValue>, tags: Array<LabelValue>, }

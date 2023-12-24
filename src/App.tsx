@@ -1,25 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Routes, Route, RouterProvider } from "react-router-dom";
+import { RouterProvider } from "react-router-dom";
 import "./assets/App.css";
 import { ColorModeContext, useMode } from "./theme";
 import { CssBaseline, ThemeProvider } from "@mui/material";
-import Dashboard from "./pages/Dashboard/Dashboard";
-import Topbar from './components/dashboard/global/Topbar'
-import Sidebar from './components/dashboard/global/Sidebar'
-import Team from './pages/Dashboard/Team'
-import Contacts from './pages/Dashboard/Contacts'
-import Invoices from './pages/Dashboard/Invoices'
-import Form from './components/dashboard/Form'
-import Bar from './pages/Dashboard/Bar'
-import Line from './pages/Dashboard/Line'
-import Pie from './pages/Dashboard/Pie'
-import FAQ from './pages/Dashboard/FAQ'
-import Geography from './pages/Dashboard/Geography'
-import Calendar from './pages/Dashboard/Calendar'
-import Gallery from "./pages/Gallery";
-import Settings from "./components/settings/Settings";
 
-import { ActionIcon, AppShell, Aside, Burger, Button, Footer, Global, Group, Header, MediaQuery, Navbar, Space, Text, useMantineColorScheme } from '@mantine/core';
+import { ActionIcon, AppShell, Burger, Button, Group, Space, Text, useMantineColorScheme } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 
 import * as tauriEvent from '@tauri-apps/api/event';

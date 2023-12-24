@@ -99,3 +99,49 @@ export function joinClasses(
 ) {
     return args.filter(Boolean).join(' ');
 }
+
+// --------- String Utils --------- //
+export function splitAndTrim(str: string, sep: string): string[] {
+    if (str == null) {
+        return [];
+    }
+    if (str.indexOf(sep) === -1) {
+        return [str.trim()];
+    }
+    return str.split(sep).map(trim);
+}
+
+function trim(str: string): string {
+    return str.trim();
+}
+
+// --------- Object Utils --------- //
+
+// Convert an indexed object to a pure array in the most efficient way (to-date)
+// See: https://jsperf.com/convert-nodelist-to-array, https://jsperf.com/array-from-to-nodelist
+export function listAsArray(list: any) {
+    const arr = new Array(list.length);
+    for (let i = list.length - 1; i >= 0; i--) {
+        arr[i] = list[i];
+    }
+    return arr;
+}
+
+// same as ensureMap but for array
+export function ensureArray(obj: any, propName: any): any[] {
+    return _ensure(obj, propName, Array);
+}
+
+function _ensure(obj: any, propName: any, type?: any): any {
+    const isMap = (obj instanceof Map);
+    let v = (isMap) ? obj.get(propName) : obj[propName];
+    if (v == null) {
+        v = (type == null) ? {} : (type === Array) ? [] : (new type);
+        if (isMap) {
+            obj.set(propName, v);
+        } else {
+            obj[propName] = v;
+        }
+    }
+    return v;
+}

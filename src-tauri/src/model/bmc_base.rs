@@ -1,91 +1,94 @@
 //! Base and low level Backend Model Controller functions
 //!
 
+use std::fmt::Debug;
 use super::store::{Creatable, Filterable, Patchable};
-use super::{fire_model_event, ModelMutateResultData};
-use crate::ctx::Ctx;
-use crate::{Error, Result};
-use modql::ListOptions;
+use super::{fire_model_event};
+use crate::model::ctx::Ctx;
+use crate::model::{Error, Result};
 use std::sync::Arc;
+use surreal_qb::filter::{FilterGroups, ListOptions};
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 use surrealdb::sql::Object;
+
+/// Backend Model Controller
+pub(super) trait Bmc {
+    const ENTITY: &'static str;
+}
 
 pub(super) async fn bmc_get<E>(ctx: Arc<Ctx>, _entity: &'static str, id: &str) -> Result<E>
     where
-        E: TryFrom<Object, Error = Error>,
+        E: TryFrom<Object, Error = Error> + Sync + Send + DeserializeOwned + Serialize,
 {
-    ctx.get_model_manager()
-        .store()
-        .exec_get(id)
-        .await?
-        .try_into()
+    ctx.get_model_manager().store().exec_get(id).await?.try_into()
 }
 
-pub(super) async fn bmc_create<D>(ctx: Arc<Ctx>, entity: &'static str, data: D) -> Result<ModelMutateResultData>
+pub(super) async fn bmc_create<E, D>(ctx: Arc<Ctx>, entity: &'static str, data: D) -> Result<E>
     where
-        D: Creatable,
+        D: Creatable + Sync + Send + DeserializeOwned + Serialize,
+        E: TryFrom<Object, Error = Error> + Sync + Send + DeserializeOwned + Serialize,
 {
-    let id = ctx
-        .get_model_manager()
-        .store()
-        .exec_create(entity, data)
-        .await?;
-    let result_data = ModelMutateResultData::from(id);
+    let ress = ctx.get_model_manager().store().exec_create(entity, data).await?;
+    fire_model_event(&ctx, entity, "create", ress.clone());
 
-    fire_model_event(&ctx, entity, "create", result_data.clone());
-
-    Ok(result_data)
+    ress.try_into()
 }
 
-pub(super) async fn bmc_update<D>(
-    ctx: Arc<Ctx>,
-    entity: &'static str,
-    id: &str,
-    data: D,
-) -> Result<ModelMutateResultData>
+pub(super) async fn bmc_update<E, D>(ctx: Arc<Ctx>, entity: &'static str, id: &str, data: D) -> Result<E>
     where
-        D: Patchable,
+        D: Patchable + Sync + Send + DeserializeOwned + Serialize,
+        E: TryFrom<Object, Error = Error> + Sync + Send + DeserializeOwned + Serialize,
 {
-    let id = ctx.get_model_manager().store().exec_merge(id, data).await?;
+    let ress = ctx.get_model_manager().store().exec_merge(id, data).await?;
 
-    let result_data = ModelMutateResultData::from(id);
-    fire_model_event(&ctx, entity, "update", result_data.clone());
+    fire_model_event(&ctx, entity, "update", ress.clone());
 
-    Ok(result_data)
+    ress.try_into()
 }
 
-pub(super) async fn bmc_delete(
-    ctx: Arc<Ctx>,
-    entity: &'static str,
-    id: &str,
-) -> Result<ModelMutateResultData> {
-    let id = ctx.get_model_manager().store().exec_delete(id).await?;
-    let result_data = ModelMutateResultData::from(id);
+pub(super) async fn bmc_delete<E>(ctx: Arc<Ctx>, entity: &'static str, id: &str) -> Result<E>
+    where
+        E: TryFrom<Object, Error = Error> + Sync + Send + DeserializeOwned + Serialize,
+{
+    let ress = ctx.get_model_manager().store().exec_delete(id).await?;
 
-    fire_model_event(&ctx, entity, "delete", result_data.clone());
+    fire_model_event(&ctx, entity, "delete", ress.clone());
 
-    Ok(result_data)
+    ress.try_into()
 }
 
-pub(super) async fn bmc_list<E, F>(
-    ctx: Arc<Ctx>,
-    entity: &'static str,
-    filter: Option<F>,
-    opts: ListOptions,
-) -> Result<Vec<E>>
+pub(super) async fn bmc_list<E, F>(ctx: Arc<Ctx>, entity: &'static str, filter: Option<F>, opts: ListOptions) -> Result<Vec<E>>
     where
         E: TryFrom<Object, Error = Error>,
-        F: Filterable + std::fmt::Debug,
+        F: Into<FilterGroups> + Debug,
 {
     // query for the Surreal Objects
-    let objects = ctx
-        .get_model_manager()
-        .store()
-        .exec_select(entity, filter.map(|f| f.filter_nodes(None)), opts)
-        .await?;
+    // let objects = ctx.get_model_manager().store().exec_select(entity, filter.map(|f| f.filter_nodes(None)), opts).await?;
+    let objects = ctx.get_model_manager().store().exec_select(entity, filter, opts).await?;
 
     // then get the entities
-    objects
-        .into_iter()
-        .map(|o| o.try_into())
-        .collect::<Result<_>>()
+    objects.into_iter().map(|o| o.try_into()).collect::<Result<_>>()
+}
+
+pub(super) async fn bmc_custom_solo_query<E>(ctx: Arc<Ctx>, _entity: &'static str, sql: &str, vars: Object) -> Result<Vec<E>>
+    where E: TryFrom<Object, Error = Error>,
+{
+    // query for the Surreal Objects
+    // let objects = ctx.get_model_manager().store().exec_select(entity, filter.map(|f| f.filter_nodes(None)), opts).await?;
+    let objects = ctx.get_model_manager().store().exec_custom_solo_query(sql, vars).await?;
+
+    // then get the entities
+    objects.into_iter().map(|o| o.try_into()).collect::<Result<_>>()
+}
+
+pub(super) async fn bmc_custom_multi_query<E>(ctx: Arc<Ctx>, _entity: &'static str, sqls: &str, vars: Object) -> Result<Vec<E>>
+    where E: TryFrom<Object, Error = Error>,
+{
+    let to_take = surreal_qb::analyze_query(sqls).map_err(|ex| Error::QB(ex.into()))?;
+    // query for the Surreal Objects
+    let objects = ctx.get_model_manager().store().exec_custom_multi_query(sqls, vars, to_take).await?;
+
+    // then get the entities
+    objects.into_iter().map(|o| o.try_into()).collect::<Result<_>>()
 }

@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
-import { ColorSchemeProvider, MantineProvider, Center, Loader } from "@mantine/core";
+import {MantineProvider, Center, Loader, MantineThemeOverride} from "@mantine/core";
 import { Notifications } from "@mantine/notifications"
 import { ModalsProvider } from "@mantine/modals";
 import { useHotkeys, useInterval } from "@mantine/hooks";
 import { TauriProvider } from "./TauriProvider";
 import { useCookie } from "@/hook/useCookie";
-import {MantineThemeOverride} from "@mantine/styles/lib/theme/types";
-// import {MemoryRouter} from "react-router-dom";
+import { ThemeProvider, createTheme } from '@mui/material/styles';
 
 const Splashscreen = () => {
 	return (
@@ -22,7 +21,9 @@ function usingDarkTheme(fallback = true) {
 	const [systemIsDark, setSystemIsDark] = useState(window.matchMedia === undefined ? fallback : window.matchMedia('(prefers-color-scheme: dark)').matches);
 	const colorSchemeInterval = useInterval(() => {
 		const prefersDarkTheme = window.matchMedia === undefined ? fallback : window.matchMedia('(prefers-color-scheme: dark)').matches;
-		if(prefersDarkTheme != prefersDarkTheme) setSystemIsDark(prefersDarkTheme);
+		if(prefersDarkTheme != prefersDarkTheme) {
+			setSystemIsDark(prefersDarkTheme);
+		}
 	}, 200);
 	useEffect(() => {
 		colorSchemeInterval.stop();
@@ -48,8 +49,7 @@ export default function Providers({ children }: { children: any }) {
 	const [isLoading, setLoading] = useState(false);
 
 	const theme: MantineThemeOverride = {
-		colorScheme,
-		loader: 'oval',
+		// colors: colorScheme,
 		fontFamily: 'Open Sans, sans serif',
 		components: {
 			Checkbox: { styles: { input: { cursor: 'pointer' }, label: { cursor: 'pointer' } } },
@@ -59,7 +59,7 @@ export default function Providers({ children }: { children: any }) {
 			Space: { defaultProps: { h: 'sm' } },
 			Anchor: { defaultProps: { target: '_blank' } }
 		},
-		globalStyles: theme => ({
+		other: {
 			'.row': {
 				display: 'flex',
 				alignItems: 'flex-end',
@@ -78,21 +78,17 @@ export default function Providers({ children }: { children: any }) {
 				display: 'inline-block',
 				margin: 'auto 5px',
 			}
-		})
+		}
 	}
 
 	return (
-		<MantineProvider theme={theme} withGlobalStyles withNormalizeCSS withCSSVariables>
-			<ColorSchemeProvider colorScheme={colorScheme} toggleColorScheme={toggleColorScheme}>
-				<ModalsProvider>
-					<TauriProvider>
-						<Notifications/>
-						{isLoading ? <Splashscreen/> : children}
-					</TauriProvider>
-					{/*<MemoryRouter>*/}
-					{/*</MemoryRouter>*/}
-				</ModalsProvider>
-			</ColorSchemeProvider>
+		<MantineProvider theme={theme} withCssVariables>
+			<ModalsProvider>
+				<TauriProvider>
+					<Notifications/>
+					{isLoading ? <Splashscreen/> : children}
+				</TauriProvider>
+			</ModalsProvider>
 		</MantineProvider>
 	)
 }

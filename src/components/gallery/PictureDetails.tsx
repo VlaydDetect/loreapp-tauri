@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from "react";
-import {emptyPicture, IPicture} from "@/interface";
+import {Picture} from "@/interface";
 import {MdDelete} from "react-icons/md";
 import {useNavigate, useParams} from "react-router-dom";
 import {convertFileSrc} from '@tauri-apps/api/tauri';
@@ -12,11 +12,17 @@ import {createFile, getAppPath, getCache, readFile, updateCache} from "@/fs/fs";
 import useSettingsStore from "@/components/settings/settingsStore";
 import {changeAppSettings, getSettings} from "@/utils/settings";
 import {components} from "react-select";
+import {picFmc} from "@/db";
 
 const animatedSelector = makeAnimated();
 
-export const PictureDetails = ({pictureId}: { pictureId: string | undefined }) => {
-    const [picture, setPicture] = useState<IPicture>(emptyPicture);
+export const PictureDetails = ({picture}: { picture: Picture | undefined }) => {
+
+    if (!picture) return (
+        <div>
+            <p>Whoops! The image cannot be loaded...</p>
+        </div>
+    );
 
     const appSettings = useSettingsStore(state => state.settings)
     const updateGalleryOptions = useSettingsStore(state => state.updateSettings)
@@ -24,14 +30,14 @@ export const PictureDetails = ({pictureId}: { pictureId: string | undefined }) =
     const addTag = useSettingsStore(state => state.addTag)
 
     const [title, setTitle, onTitleChange] = useInput(picture.title);
-    const [description, setDescription, onDescriptionChange] = useInput(picture.description);
+    const [description, setDescription, onDescriptionChange] = useInput(picture.desc);
 
     const [categories, setCategories, getCategories, setCategoriesValue, categoriesOnChange, categoriesOnCreateOption] = useMultiCreatableSelector({
-        options: picture.categories,
+        options: picture.categories ? picture.categories : [],
         onCreateCallback: option => addCategory(option)
     })
     const [tags, setTags, getTags, setTagsValue, tagsOnChange, tagsOnCreateOption] = useMultiCreatableSelector({
-        options: picture.tags,
+        options: picture.tags ? picture.tags : [],
         onCreateCallback: option => addTag(option)
     })
 
@@ -40,6 +46,7 @@ export const PictureDetails = ({pictureId}: { pictureId: string | undefined }) =
 
     const navigate = useNavigate();
 
+    // TODO: load tags, load categories, load picture
     useEffect(() => {
         setLoading(true)
 
@@ -186,8 +193,15 @@ export const PictureDetails = ({pictureId}: { pictureId: string | undefined }) =
 
 const DetailsWrapper = () => {
     const {picId: id} = useParams()
+    const [picture, setPicture] = useState<Picture>();
 
-    return <PictureDetails pictureId={id}/>
+    useEffect(() => {
+        if (id) {
+            picFmc.get(id).then(pic => setPicture(pic));
+        }
+    }, []);
+
+    return <PictureDetails picture={picture}/>
 }
 
 export default DetailsWrapper

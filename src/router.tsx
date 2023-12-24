@@ -13,7 +13,7 @@ import FAQ from "@/pages/Dashboard/FAQ";
 import Calendar from "@/pages/Dashboard/Calendar";
 import Geography from "@/pages/Dashboard/Geography";
 import Settings from "@/components/settings/Settings";
-import Sidebar from "@/components/dashboard/global/Sidebar";
+import AppSidebar from "@/components/dashboard/global/AppSidebar";
 import Topbar from "@/components/dashboard/global/Topbar";
 import Documents from "@/pages/Documents";
 import {emptyDocument} from "@/interface";
@@ -22,7 +22,7 @@ import DocumentWrapper from "@/components/documents/Document";
 const Root: React.FC = () => {
     return (
         <>
-            <Sidebar />
+            <AppSidebar />
             <main className="content">
                 <Topbar />
                 <Outlet/>

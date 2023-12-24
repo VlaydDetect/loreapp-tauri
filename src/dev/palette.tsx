@@ -7,9 +7,6 @@ import {
     Palette,
 } from "@react-buddy/ide-toolbox";
 import AntdPalette from "@react-buddy/palette-antd";
-import MantinePalette from "@react-buddy/palette-mantine-core";
-import MantinePalette1 from "@react-buddy/palette-mantine-form";
-import MantinePalette2 from "@react-buddy/palette-mantine-dates";
 import MUIPalette from "@react-buddy/palette-mui";
 
 export const PaletteTree = () => (
@@ -22,9 +19,6 @@ export const PaletteTree = () => (
             </Component>
         </Category>
         <AntdPalette/>
-        <MantinePalette/>
-        <MantinePalette1/>
-        <MantinePalette2/>
         <MUIPalette/>
     </Palette>
 );

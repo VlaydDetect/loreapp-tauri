@@ -1,6 +1,8 @@
 use crate::Result;
+// use crate::model::Result as ModelResult;
 use serde::Serialize;
 use ts_rs::TS;
+use crate::prelude::f;
 
 #[derive(TS, Serialize)]
 #[ts(export, rename_all="camelCase", export_to = "../src/interface/")]
@@ -39,10 +41,31 @@ impl<D> From<Result<D>> for IpcResponse<D>
             },
             Err(err) => IpcResponse {
                 error: Some(IpcError {
-                    message: format!("{err}"),
+                    message: f!("{err}"),
                 }),
                 result: None,
             },
         }
     }
 }
+
+
+// impl<D> From<ModelResult<D>> for IpcResponse<D>
+//     where
+//         D: Serialize,
+// {
+//     fn from(res: ModelResult<D>) -> Self {
+//         match res {
+//             Ok(data) => IpcResponse {
+//                 error: None,
+//                 result: Some(IpcSimpleResult { data }),
+//             },
+//             Err(err) => IpcResponse {
+//                 error: Some(IpcError {
+//                     message: format!("{err}"),
+//                 }),
+//                 result: None,
+//             },
+//         }
+//     }
+// }

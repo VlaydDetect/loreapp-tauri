@@ -1,5 +1,5 @@
-use super::utils::*;
 use tauri;
+use super::utils::*;
 use std::{fs, path::PathBuf};
 use std::io::Write;
 use std::path::Path;
@@ -7,8 +7,10 @@ use std::string::ToString;
 use walkdir::WalkDir;
 use crate::settings::{AppSettings};
 use crate::ipc::{IpcError, IpcResponse, IpcSimpleResult};
+use crate::Error;
 use serde::{Serialize, Deserialize};
 use ts_rs::TS;
+use crate::settings;
 
 //#region -------- Paths --------
 pub fn get_tauri_data_dir() -> PathBuf {
@@ -23,31 +25,8 @@ pub fn get_user_path() -> PathBuf {
     PathBuf::from(format!("{}/userdata", path_to_string(&get_app_data_path())))
 }
 
-pub fn get_documents_path() -> PathBuf {
-    let default_path = PathBuf::from(format!("{}/documents", path_to_string(&get_user_path())));
-    let documents_path = string_to_path(&AppSettings::deserialize().documents_path);
-
-    if documents_path == default_path || documents_path.capacity() == 0 {
-        return default_path;
-    }
-
-    documents_path
-}
-
-pub fn get_trash_path() -> PathBuf {
-    PathBuf::from(format!("{}/trash", path_to_string(&get_documents_path())))
-}
-
 pub fn get_settings_path() -> PathBuf {
     PathBuf::from(format!("{}/app_settings.json", path_to_string(&get_user_path())))
-}
-
-pub fn get_gallery_data_path() -> PathBuf {
-    PathBuf::from(format!("{}/data/data.json", AppSettings::deserialize().gallery_path))
-}
-
-pub fn get_documents_data_path() -> PathBuf {
-    PathBuf::from(format!("{}/data/data.json", path_to_string(&get_documents_path())))
 }
 //#endregion -------- /Paths --------
 
@@ -59,14 +38,6 @@ pub fn init_workspace() {
 
     if !get_user_path().exists() {
         fs::create_dir_all(get_user_path()).unwrap();
-    }
-
-    if !get_documents_path().exists() {
-        fs::create_dir_all(get_documents_path()).unwrap();
-    }
-
-    if !get_trash_path().exists() {
-        fs::create_dir_all(get_trash_path()).unwrap();
     }
 
     if !get_settings_path().exists() {
@@ -81,8 +52,6 @@ pub fn init_workspace() {
 pub enum PathsToGet {
     AppData,
     UserData,
-    GalleryData,
-    DocumentsData
 }
 
 #[tauri::command]
@@ -90,16 +59,7 @@ pub fn get_app_path(variant: PathsToGet) -> IpcResponse<String> {
     Ok(path_to_string(&match variant {
         PathsToGet::AppData => get_app_data_path(),
         PathsToGet::UserData => get_user_path(),
-        PathsToGet::GalleryData => get_gallery_data_path(),
-        PathsToGet::DocumentsData => get_documents_data_path(),
     })).into()
-}
-
-
-#[tauri::command]
-pub fn process_file(filepath: String) -> String {
-    println!("Processing file: {}", filepath);
-    format!("Processing file: {}", filepath)
 }
 
 #[tauri::command]

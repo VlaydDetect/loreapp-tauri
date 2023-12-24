@@ -1,26 +1,26 @@
 import React, {Dispatch, SetStateAction, useState} from "react";
 import {OnChangeValue} from "react-select";
-import {TOption, createOption} from "@/interface";
+import {createOption, LabelValue} from "@/interface";
 
 interface IProps {
-    options: TOption[],
-    onChangeCallback?: (options: TOption | null) => void,
-    onCreateCallback?: (options: TOption) => void,
-    defaultValue?: TOption,
+    options: LabelValue[],
+    onChangeCallback?: (options: LabelValue | null) => void,
+    onCreateCallback?: (options: LabelValue) => void,
+    defaultValue?: LabelValue,
 }
 
 interface IMultiProps {
-    options: TOption[],
-    onChangeCallback?: (options: TOption[]) => void,
-    onCreateCallback?: (options: TOption) => void,
-    defaultValue?: TOption[],
+    options: LabelValue[],
+    onChangeCallback?: (options: LabelValue[]) => void,
+    onCreateCallback?: (options: LabelValue) => void,
+    defaultValue?: LabelValue[],
 }
 
-// type TResult = [TOption[], Dispatch<SetStateAction<TOption[]>>, () => TOption | null | undefined, Dispatch<SetStateAction<TOption | null>>, (newValue: OnChangeValue<TOption, false>) => void, (inputValue: string) => void]
-// type TMultiResult = [TOption[], Dispatch<SetStateAction<TOption[]>>, () => TOption[], Dispatch<SetStateAction<TOption[]>>, (newValue: OnChangeValue<TOption, true>) => void, (inputValue: string) => void]
+// type TResult = [LabelValue[], Dispatch<SetStateAction<LabelValue[]>>, () => LabelValue | null | undefined, Dispatch<SetStateAction<LabelValue | null>>, (newValue: OnChangeValue<LabelValue, false>) => void, (inputValue: string) => void]
+// type TMultiResult = [LabelValue[], Dispatch<SetStateAction<LabelValue[]>>, () => LabelValue[], Dispatch<SetStateAction<LabelValue[]>>, (newValue: OnChangeValue<LabelValue, true>) => void, (inputValue: string) => void]
 
-type TResult = [TOption[], Dispatch<SetStateAction<TOption[]>>, TOption | null | undefined, Dispatch<SetStateAction<TOption | null>>, (newValue: OnChangeValue<TOption, false>) => void, (inputValue: string) => void]
-type TMultiResult = [TOption[], Dispatch<SetStateAction<TOption[]>>, TOption[], Dispatch<SetStateAction<TOption[]>>, (newValue: OnChangeValue<TOption, true>) => void, (inputValue: string) => void]
+type TResult = [LabelValue[], Dispatch<SetStateAction<LabelValue[]>>, LabelValue | null | undefined, Dispatch<SetStateAction<LabelValue | null>>, (newValue: OnChangeValue<LabelValue, false>) => void, (inputValue: string) => void]
+type TMultiResult = [LabelValue[], Dispatch<SetStateAction<LabelValue[]>>, LabelValue[], Dispatch<SetStateAction<LabelValue[]>>, (newValue: OnChangeValue<LabelValue, true>) => void, (inputValue: string) => void]
 
 export function useCreatableSelector({ options, onChangeCallback, onCreateCallback, defaultValue}: IProps): TResult {
     const [opts, setOpts] = useState(options);
@@ -28,7 +28,7 @@ export function useCreatableSelector({ options, onChangeCallback, onCreateCallba
 
     const getValue = () => value ? opts.find(c => c === value) : null
 
-    const onChange = (newValue: OnChangeValue<TOption, false>) => {
+    const onChange = (newValue: OnChangeValue<LabelValue, false>) => {
         setValue(newValue ? newValue : null)
 
         if (onChangeCallback) {
@@ -56,7 +56,7 @@ export function useMultiCreatableSelector({options, onChangeCallback, onCreateCa
 
     const getValue = () => values ? opts.filter(c => values.indexOf(c) >= 0) : []
 
-    const onChange = (newValue: OnChangeValue<TOption, true>) => {
+    const onChange = (newValue: OnChangeValue<LabelValue, true>) => {
         setValues(newValue.map(v => v))
 
         if (onChangeCallback) {

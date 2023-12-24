@@ -20,8 +20,6 @@ const defaultSettings: AppSettings = {
         cursorPosition: false,
     },
     sortBy: "normal",
-    galleryPath: '',
-    documentsPath: '',
     categories: [],
     tags: []
 }

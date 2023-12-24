@@ -1,4 +1,7 @@
 export * from './AppSettings';
+export * from './Document';
+export * from './DocumentForCreate';
+export * from './DocumentForUpdate';
 export * from './EditorMode';
 export * from './EditorSettings';
 export * from './Folder';
@@ -14,6 +17,9 @@ export * from './Note';
 export * from './NoteForCreate';
 export * from './NoteForUpdate';
 export * from './PathsToGet';
+export * from './Picture';
+export * from './PictureForCreate';
+export * from './PictureForUpdate';
 export * from './SingleInstancePayload';
 export * from './SortBy';
 export * from './SystemTrayPayload';

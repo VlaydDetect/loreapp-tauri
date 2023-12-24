@@ -5,30 +5,20 @@ use tauri;
 use std::{fs, path::PathBuf};
 use std::io::{Read, Write};
 use std::string::{String};
+use std::sync::{Arc};
 use crate::fs::{get_settings_path, get_user_path, path_to_string};
-use crate::ipc::IpcResponse;
+use crate::Result as MainResult;
+use crate::utils::LabelValue;
 
 //#region -------- Structs --------
-#[derive(Debug, TS, Serialize, Deserialize, Clone, PartialEq, SerdeDiff)]
-#[ts(export, rename_all="camelCase", export_to = "../src/interface/")]
-pub struct LabelValue {
-    pub label: String,
-    pub value: String
-}
-
-#[derive(TS, Serialize, Deserialize, PartialEq, SerdeDiff)]
+#[derive(TS, Serialize, Deserialize, PartialEq, SerdeDiff, Clone)]
 #[ts(export, rename_all="camelCase", export_to = "../src/interface/")]
 #[serde(rename_all = "camelCase")]
 pub enum EditorMode {
     Normal
 }
 
-// #[derive(TS, Serialize)]
-// #[ts(export, rename_all="camelCase", export_to = "../src/interface/")]
-// #[serde(rename_all = "camelCase")]
-// struct MarkdownSettings {}
-
-#[derive(TS, Serialize, Deserialize, PartialEq, SerdeDiff)]
+#[derive(TS, Serialize, Deserialize, PartialEq, SerdeDiff, Clone)]
 #[ts(export, rename_all="camelCase", export_to = "../src/interface/")]
 #[serde(rename_all = "camelCase")]
 pub struct EditorSettings {
@@ -36,7 +26,7 @@ pub struct EditorSettings {
     cursor_position: bool
 }
 
-#[derive(TS, Serialize, Deserialize, PartialEq, SerdeDiff)]
+#[derive(TS, Serialize, Deserialize, PartialEq, SerdeDiff, Clone)]
 #[ts(export, rename_all="camelCase", export_to = "../src/interface/")]
 #[serde(rename_all = "camelCase")]
 pub enum SortBy {
@@ -45,61 +35,32 @@ pub enum SortBy {
     UpdateDate
 }
 
-#[derive(TS, Serialize, Deserialize, PartialEq, SerdeDiff)]
+#[derive(TS, Serialize, Deserialize, PartialEq, SerdeDiff, Clone)]
 #[ts(export, rename_all="camelCase", export_to = "../src/interface/")]
 #[serde(rename_all = "camelCase")]
 pub struct AppSettings {
     pub editor_mode: EditorMode,
-    // markdown_settings: MarkdownSettings,
     pub editor: EditorSettings,
     pub sort_by: SortBy,
-    pub gallery_path: String,
-    pub documents_path: String,
     pub categories: Vec<LabelValue>,
     pub tags: Vec<LabelValue>
 }
+
+pub type AppSettingsState = Arc<AppSettings>;
 //endregion -------- /Structs --------
 
-//#region -------- Commands --------
-#[tauri::command]
-pub fn get_settings() -> IpcResponse<AppSettings> {
-    Ok(AppSettings::deserialize()).into()
-}
-
-#[tauri::command]
-pub fn change_settings(new_settings: String) -> IpcResponse<()> {
-    let mut old = AppSettings::deserialize();
-    let old_documents_path = super::fs::string_to_path(&old.documents_path);
-
-    let new =  AppSettings::from(new_settings);
-    let new_documents_path = super::fs::string_to_path(&new.documents_path);
-
-    // TODO: implement the Levenshtein distance algorithm
-    let json_diff_data = serde_json::to_string(&Diff::serializable(&old, &new)).unwrap();
-    let mut deserializer = serde_json::Deserializer::from_str(&json_diff_data);
-    Apply::apply(&mut deserializer, &mut old).unwrap();
-
-    if old_documents_path != new_documents_path {
-        super::fs::move_files_recursively(&old_documents_path, &new_documents_path).unwrap()
-    }
-
-    old.serialize();
-    Ok(()).into()
-}
-//endregion -------- /Commands --------
-
-pub fn get_default_settings() -> AppSettings {
-    AppSettings {
-        editor_mode: EditorMode::Normal,
-        editor: EditorSettings {
-            font_size: 24,
-            cursor_position: false,
-        },
-        sort_by: SortBy::Normal,
-        gallery_path: String::new(),
-        documents_path: path_to_string(&PathBuf::from(format!("{}/documents", path_to_string(&get_user_path())))),
-        categories: vec![],
-        tags: vec![]
+impl Default for AppSettings {
+    fn default() -> Self {
+        Self {
+            editor_mode: EditorMode::Normal,
+            editor: EditorSettings {
+                font_size: 24,
+                cursor_position: false,
+            },
+            sort_by: SortBy::Normal,
+            categories: vec![],
+            tags: vec![]
+        }
     }
 }
 
@@ -109,7 +70,7 @@ impl From<String> for AppSettings {
             Ok(value) => value,
             Err(err) => {
                 error!("Can not read the settings file. Error: {}", err);
-                AppSettings::default_settings()
+                AppSettings::default()
             }
         }
     }
@@ -126,20 +87,17 @@ impl From<PathBuf> for AppSettings {
             },
             Err(_) => {
                 error!("fs ERROR: settings file not found");
-                AppSettings::default_settings()
+                AppSettings::default()
             }
         }
-
     }
 }
 
+// FIXME: replace all fs::File methods with OpenOptions, unwraps with error handling
+// TODO: make async
 impl AppSettings {
-    pub fn default_settings() -> Self {
-        get_default_settings()
-    }
-
     pub fn create() {
-        let settings = get_default_settings();
+        let settings = AppSettings::default();
         let mut file = fs::File::create(get_settings_path()).unwrap();
         let json = serde_json::to_string(&settings).unwrap();
         write!(file, "{}", json).unwrap();
@@ -151,7 +109,11 @@ impl AppSettings {
         write!(file, "{}", json).unwrap();
     }
 
-    pub fn deserialize() -> Self {
-        get_settings_path().into()
+    pub fn deserialize() -> MainResult<Self> {
+        let file_content = fs::read(get_settings_path())?;
+        match serde_json::from_slice::<Self>(&file_content) {
+            Ok(val) => Ok(val),
+            Err(err) => Err(err.into())
+        }
     }
 }

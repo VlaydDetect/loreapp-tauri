@@ -5,9 +5,10 @@
 //! model controller calls the store and fire model events as appropriate.
 //!
 
-use crate::ctx::Ctx;
+use ctx::Ctx;
 use crate::event::HubEvent;
 use serde::Serialize;
+use surrealdb::sql::Object;
 use store::SurrealStore;
 use ts_rs::TS;
 
@@ -17,15 +18,17 @@ mod document;
 mod picture;
 mod seed_for_dev;
 mod store;
-mod collect_db_items;
+pub mod ctx;
+mod error;
+mod tags_and_categories;
 
 // --- Re-exports
+pub use error::{Error, Result};
 pub use model_store::*;
 pub use document::*;
 pub use picture::*;
 // For dev only
 pub use seed_for_dev::seed_store_for_dev;
-pub use collect_db_items::*;
 
 fn fire_model_event<D>(ctx: &Ctx, entity: &str, action: &str, data: D)
     where
@@ -53,6 +56,15 @@ impl From<String> for ModelMutateResultData {
     }
 }
 
+impl TryFrom<Object> for ModelMutateResultData {
+    type Error = Error;
+    fn try_from(mut val: Object) -> std::result::Result<Self, Self::Error> {
+        let id = val.x_take_val::<String>("id")?;
+
+        Ok(Self { id })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use modql::filter::{FilterNodes, OpValString, OpValsString};
@@ -71,3 +83,17 @@ mod tests {
         Ok(())
     }
 }
+
+macro_rules! vmap {
+    () => (
+        ::std::collections::BTreeMap::<String, ::surrealdb::sql::Value>::new()
+    );
+    ($($k:expr => $v:expr),* $(,)?) => {{
+		let mut m = ::std::collections::BTreeMap::<String, ::surrealdb::sql::Value>::new();
+        $(m.insert($k, $v);)+
+        m
+    }};
+}
+
+pub(crate) use vmap;
+use crate::model::store::x_take::XTake;

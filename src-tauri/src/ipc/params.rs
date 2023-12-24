@@ -19,6 +19,7 @@ pub struct UpdateParams<D> {
 #[derive(Deserialize)]
 pub struct ListParams<F> {
     pub filter: Option<F>,
+    pub list_options: Option<surreal_qb::filter::ListOptions>
 }
 
 #[derive(Deserialize)]

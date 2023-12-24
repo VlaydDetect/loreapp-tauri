@@ -3,10 +3,23 @@
 //! This pattern allows to:
 //!   1) Expose only the "new" to outside the model module tree.
 //!   2) Access to the underlying store is allowed only for the model module tree.
+//!
+//! Design:
+//! - The Model layer normalizes the application's data type
+//!   structures and access.
+//! - App application code data access must go through the Model layer.
+//! - The `ModelManager` holds the internal states/resources
+//!   needed by ModelControllers to access data. (e.g. db)
+//! - Model Controllers (e.g `PictureBmc`, `DocumentBmc`) implement
+//!   CRUD and other data access methods on a given "entity" (e.g. `Picture`, `Document`)
+//!   (`Bmc` is short for Backend Model Controller)
+//! - In Tauri Framework, `ModelManager` are typically used as App State.
+//! - ModelManager are designed to be passed as an argument to
+//!   all Model Controllers functions.
 
 use std::sync::Arc;
 use super::SurrealStore;
-use crate::Result;
+use crate::model::Result;
 
 pub struct ModelStore(SurrealStore);
 pub type ModelStoreState = Arc<ModelStore>;

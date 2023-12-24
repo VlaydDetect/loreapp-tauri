@@ -1,20 +1,15 @@
 import {useEffect, useState} from "react";
 import GalleryLayout from "../components/gallery/GalleryLayout";
 import {Box, Typography, Button, IconButton, useTheme} from "@mui/material";
-import {
-	filterByExtensions,
-	getFilesRecursively, createFile, getAppPath, isExists, readFile, IMAGE_EXTENSIONS, getCache
-} from "@/fs/fs";
 import {tokens} from "@/theme";
-import {DirectoryContent, IPicture} from "@/interface";
+import {DirectoryContent, Picture} from "@/interface";
 import useSettingsStore from "@/components/settings/settingsStore";
-import {useFileWatcher} from "@/hook/useFileWatcher";
-import {picturesFileWatcherCallback} from "@/fs/fileWatcher";
 import {useContentNavigation} from "@/hook";
 import FolderNavigation from "@/components/FileSystem/FolderNavigation";
 import {DirectoryContents} from "@/components/FileSystem/DirectoryContents";
 import useContentsStore from "@/components/FileSystem/contentsStore";
-import ipcInvoke from "@/ipc";
+import {picFmc} from "@/db";
+import {useModelEvent} from "@/event";
 
 const Gallery = () => {
 	const theme = useTheme();
@@ -35,55 +30,7 @@ const Gallery = () => {
 	} = useContentNavigation(searchResults, setSearchResults);
 
 	const appSettings = useSettingsStore(state => state.settings)
-	const [pictures, setPictures] = useState<IPicture[]>([]);
-
-	useEffect(() => {
-		// getAppPath('GalleryData').then(path => {
-		// 	isExists(path).then(exists => {
-		// 		if (exists) {
-		// 			readFile(path).then(data => {
-		// 				setPictures(JSON.parse(data) as IPicture[])
-		// 			})
-		// 		} else {
-		// 			getFilesRecursively(appSettings.galleryPath, true).then(result => {
-		// 				const imgs = filterByExtensions(result, IMAGE_EXTENSIONS)
-		// 				const pics: IPicture[] = []
-		//
-		// 				imgs.forEach((image, index) => {
-		// 					pics.push({
-		// 						id: index,
-		// 						title: '',
-		// 						description: '',
-		// 						imgPath: image,
-		// 						tags: [],
-		// 						categories: []
-		// 					})
-		// 				})
-		//
-		// 				createFile({ filename: path, data: JSON.stringify(pics) }).then(() => {
-		// 					readFile(path).then(result => {
-		// 						setPictures(JSON.parse(result) as IPicture[])
-		// 					})
-		// 				})
-		// 			})
-		// 		}
-		// 	})
-		// })
-
-		getCache('gallery').then(cache => {
-			setPictures(JSON.parse(cache) as IPicture[])
-		}).then(() => {
-			ipcInvoke<unknown>("list_documents", {params: {}}).then(data => {
-				console.log(data)
-			})
-		})
-	}, [appSettings.galleryPath]);
-
-	// useFileWatcher({
-	// 	path: appSettings.galleryPath,
-	// 	callback: (event) => picturesFileWatcherCallback(event, appSettings, pictures, setPictures),
-	// 	options: { recursive: false, filters: IMAGE_EXTENSIONS }
-	// })
+	const [pictures, setPictures] = useState<Picture[]>([]);
 
 	return (
 		<Box m="20px">
@@ -109,7 +56,7 @@ const Gallery = () => {
 				</div>
 			</div>
 			<Box>
-				<GalleryLayout pictures={pictures}/>
+				<GalleryLayout/>
 			</Box>
 		</Box>
 	);

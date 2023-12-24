@@ -24,8 +24,11 @@ macro_rules! set {
     Create BTreeMap
 **/
 macro_rules! map {
+    () => (
+        ::std::collections::BTreeMap::new()
+    );
     ($($k:expr => $v:expr),* $(,)?) => {{
-        let mut m = ::std::collections::BTreeMap::new();
+		let mut m = ::std::collections::BTreeMap::new();
         $(m.insert($k, $v);)+
         m
     }};
