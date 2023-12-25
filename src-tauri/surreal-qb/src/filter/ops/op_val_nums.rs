@@ -1,7 +1,4 @@
-use crate::filter::{value_from_vec, OpVal};
-use surrealdb::sql::Value as SurqlValue;
-use crate::filter::OpVal::Value;
-use crate::error::Result;
+use crate::filter::{OpVal};
 
 /// - `ovs` OpValsType, e.g., `OpValsUint64`
 /// - `ov` OpValType, e.g., `OpValUint64`
@@ -184,7 +181,6 @@ mod surrealql {
 	use crate::{BinaryOper, ConditionExpression, SimpleExpr};
 	use super::*;
 	use crate::filter::surreal_is_value_null;
-	use surrealdb::sql::Value;
 	use crate::error::SurrealResult;
 
 	macro_rules! impl_into_surrealql {

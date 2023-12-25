@@ -91,7 +91,7 @@ pub async fn collect_picture_from_disk(app: AppHandle<Wry>, dir_path: String) ->
             if entry.file_type().is_file() {
                 let extension = entry.path().extension().unwrap().to_str().unwrap();
 
-                if IMAGE_EXTENSIONS.contains(&extension.clone()) {
+                if IMAGE_EXTENSIONS.contains(&extension) {
                     data_urls
                         .entry(file_path.clone())
                         .or_insert(

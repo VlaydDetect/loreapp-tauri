@@ -1,7 +1,4 @@
-use std::fmt::format;
 use crate::filter::OpVal;
-use surrealdb::sql::Value;
-use crate::error::Result;
 
 #[derive(Debug)]
 pub struct OpValsBool(pub Vec<OpValBool>);
@@ -102,13 +99,13 @@ mod surrealql {
     impl OpValBool {
         pub fn into_surrealql(self, prop_name: &str) -> SurrealResult<ConditionExpression> {
             let binary_fn = |op: BinaryOper, vxpr: SimpleExpr| {
-                ConditionExpression::SimpleExpr(SimpleExpr::binary(prop_name.clone().into(), op, vxpr))
+                ConditionExpression::SimpleExpr(SimpleExpr::binary(prop_name.into(), op, vxpr))
             };
 
             let cond = match self {
                 OpValBool::Eq(s) => binary_fn(BinaryOper::Equal, s.into()),
                 OpValBool::Not(s) => binary_fn(BinaryOper::NotEqual, s.into()),
-                OpValBool::Null(null) => surreal_is_value_null(prop_name.clone(), null),
+                OpValBool::Null(null) => surreal_is_value_null(prop_name, null),
             };
 
             Ok(cond)

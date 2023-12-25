@@ -3,12 +3,12 @@ use surreal_qb::filter::{FilterGroups, IntoFilterNodes};
 use surrealdb::sql::{Object, Value};
 use crate::utils::LabelValue;
 
-mod surrealql;
 mod surreal_store;
 mod try_froms;
 mod x_take_impl;
 mod error;
 pub(super) mod x_take;
+
 // --- Re-export
 pub use error::{Error, Result};
 pub(super) use surreal_store::SurrealStore;

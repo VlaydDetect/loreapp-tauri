@@ -1,7 +1,5 @@
 use crate::filter::OpVal;
-use crate::error::{Error, Result};
-use surrealdb::sql::{Array, Value, json};
-use serde_json::Value as Json;
+use surrealdb::sql::{Array, Value};
 
 #[derive(Debug)]
 pub struct OpValsArray(pub Vec<OpValArray>);
@@ -142,18 +140,18 @@ mod surrealql {
     use crate::*;
     use crate::filter::surreal_is_value_null;
     use crate::error::SurrealResult;
-    use surrealdb::sql::{Array, json, Value};
+    use surrealdb::sql::{Array, Value};
 
     impl OpValArray {
         pub fn into_surrealql(self, prop_name: &str) -> SurrealResult<ConditionExpression> {
             let array_binary_fn = |op: BinaryOper, a: Array| {
                 let vxpr = SimpleExpr::Value(types::Value(Value::from(a)));
-                ConditionExpression::SimpleExpr(SimpleExpr::binary(prop_name.clone().into(), op, vxpr))
+                ConditionExpression::SimpleExpr(SimpleExpr::binary(prop_name.into(), op, vxpr))
             };
 
             let solo_binary_fn = |op: BinaryOper, v: Value| {
                 let vxpr = SimpleExpr::Value(types::Value(v));
-                ConditionExpression::SimpleExpr(SimpleExpr::binary(prop_name.clone().into(), op, vxpr))
+                ConditionExpression::SimpleExpr(SimpleExpr::binary(prop_name.into(), op, vxpr))
             };
 
             let cond = match self {
@@ -176,15 +174,15 @@ mod surrealql {
 
                 OpValArray::Empty(empty) => {
                     let op = if empty { BinaryOper::Equal } else { BinaryOper::NotEqual };
-                    let mut cond = Condition::any().add(surreal_is_value_null(prop_name.clone(), empty));
+                    let mut cond = Condition::any().add(surreal_is_value_null(prop_name, empty));
 
-                    let expr = Expr::expr(Func::len(prop_name.clone())).binary(op, SimpleExpr::Value("0".into()));
+                    let expr = Expr::expr(Func::len(prop_name)).binary(op, SimpleExpr::Value("0".into()));
                     let expr = ConditionExpression::SimpleExpr(expr);
 
                     cond = cond.add(expr);
                     cond.into()
                 }
-                OpValArray::Null(null) => surreal_is_value_null(prop_name.clone(), null),
+                OpValArray::Null(null) => surreal_is_value_null(prop_name, null),
             };
 
             Ok(cond)

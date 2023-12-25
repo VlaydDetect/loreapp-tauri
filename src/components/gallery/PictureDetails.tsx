@@ -123,7 +123,7 @@ export const PictureDetails = ({picture}: { picture: Picture | undefined }) => {
                         className="flex justify-center items-center flex-col border-2 border-dotted border-gray-300 p-3 w-full h-[420]">
                         {loading && <Spinner/>}
                         <div className="relative h-full">
-                            <img src={convertFileSrc(picture.imgPath)} alt="pic-img" className="h-full w-full"/>
+                            <img src={convertFileSrc(picture.img_path)} alt="pic-img" className="h-full w-full"/>
                             <button type="button"
                                     className="absolute bottom-3 right-3 p-3 rounded-full bg-white text-xl cursor-pointer outline-none hover:shadow-md transition-all duration-500"
                                     onClick={() => {

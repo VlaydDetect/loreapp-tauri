@@ -19,7 +19,7 @@ impl SurrelaQLWriter for String {
         self.push_str(&query_builder.value_to_string(&value))
     }
 
-    fn insert_param(&mut self, name: &str, value: Value) {
+    fn insert_param(&mut self, _name: &str, _value: Value) {
         unimplemented!("insert_param isn't implemented for String")
     }
 
