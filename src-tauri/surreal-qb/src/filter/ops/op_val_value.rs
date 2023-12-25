@@ -1,7 +1,5 @@
-use crate::filter::{OpVal, value_from_vec, value_from_vec_of_serde_value};
+use crate::filter::OpVal;
 use serde_json::Value;
-use surrealdb::sql::{Value as SurqlValue, json};
-use crate::error::Result;
 
 #[derive(Debug)]
 pub struct OpValsValue(pub Vec<OpValValue>);

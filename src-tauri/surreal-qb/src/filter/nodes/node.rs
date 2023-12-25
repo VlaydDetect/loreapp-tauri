@@ -1,8 +1,5 @@
 use crate::filter::ops::OpVal;
 use crate::filter::{OpValBool, OpValFloat64, OpValInt64, OpValString};
-use surrealdb::sql::Value;
-use std::collections::BTreeMap;
-use crate::error::Result;
 
 pub trait IntoFilterNodes {
     fn filter_nodes(self, context_path: Option<String>) -> Vec<FilterNode>;
@@ -157,7 +154,6 @@ impl From<(&str, bool)> for FilterNode {
 
 mod surrealql {
     use super::*;
-    use crate::filter::OpValValue;
     use crate::ConditionExpression;
     use crate::error::SurrealResult;
 
@@ -172,7 +168,7 @@ mod surrealql {
                     OpVal::Int64(ov) => ov.into_surrealql(&self.name)?,
                     OpVal::Float64(ov) => ov.into_surrealql(&self.name)?,
                     OpVal::Bool(ov) => ov.into_surrealql(&self.name)?,
-                    OpVal::Value(ov) => {
+                    OpVal::Value(_ov) => {
                         // let Some(for_sea_cond) = for_sea_cond.as_ref() else {
                         //     return Err(IntoSeaError::Custom(
                         //         "OpValsValue must have a #[modql(to_sea_value_fn=\"fn_name\"] or to_sea_condition_fn attribute"

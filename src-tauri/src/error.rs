@@ -21,8 +21,6 @@ pub enum Error {
     JsonSerde(#[from] serde_json::Error),
     #[error(transparent)]
     IO(#[from] std::io::Error),
-    #[error(transparent)]
-    Watch(#[from] notify::Error),
     #[error("{0}")]
     Other(String)
 }

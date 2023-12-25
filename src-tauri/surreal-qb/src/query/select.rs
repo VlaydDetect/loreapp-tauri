@@ -7,7 +7,6 @@ use crate::{
     FunctionCall,
     QueryStatementBuilder, QueryStatementWriter, SubQueryStatement,
 };
-use crate::filter::FilterGroups;
 use inherent::inherent;
 use surrealdb::sql::Object;
 

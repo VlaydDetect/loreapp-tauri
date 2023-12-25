@@ -1,7 +1,6 @@
 use std::fmt::Debug;
 
 use crate::{backend::QueryBuilder, SurrelaQLWriter, SurrelaQLWriterValues, SubQueryStatement};
-use crate::types::Values;
 use surrealdb::sql::Object;
 
 pub trait QueryStatementBuilder: Debug {

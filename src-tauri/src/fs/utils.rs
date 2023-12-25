@@ -15,37 +15,6 @@ pub fn string_to_path(path: &String) -> PathBuf {
     PathBuf::from(path)
 }
 
-// TODO: add new documents and gallery paths to the scope and delete old paths from it
-pub fn move_files_recursively(source: &PathBuf, dest: &PathBuf) -> Result<()> {
-    if source.is_file() {
-        let new_path = dest.join(source.file_name().unwrap());
-        rename(source, new_path)?;
-    } else if source.is_dir() {
-        create_dir_all(dest)?;
-
-        for entry in read_dir(source)? {
-            let entry = entry?;
-            let source_path = entry.path();
-            let dest_path = dest.join(entry.file_name());
-
-            move_files_recursively(&source_path, &dest_path)?;
-        }
-    }
-
-    Ok(())
-}
-
-pub fn get_mount_point(path: String) -> Option<String> {
-    let path = Path::new(&path);
-    let root = path.components().next()?;
-    let mount_point = root.as_os_str().to_string_lossy().into_owned();
-
-    let mut mount_point_path = PathBuf::new();
-    mount_point_path.push(&mount_point);
-    mount_point_path.push("\\");
-    Some(mount_point_path.to_string_lossy().into_owned())
-}
-
 pub fn img_to_data_url<T, S>(input: T, extension: S) -> String
     where T: AsRef<[u8]>,
           S: Into<String> + Display,

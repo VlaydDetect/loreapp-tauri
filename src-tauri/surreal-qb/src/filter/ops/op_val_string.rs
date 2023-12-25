@@ -1,5 +1,4 @@
 use crate::filter::OpVal;
-use crate::error::Result;
 
 #[derive(Debug)]
 pub struct OpValsString(pub Vec<OpValString>);
@@ -184,12 +183,12 @@ mod surrealql {
         pub fn into_surrealql(self, prop_name: &str) -> SurrealResult<ConditionExpression> {
             let binary_fn = |op: BinaryOper, v: String| {
                 let vxpr = SimpleExpr::Value(Value::from(v));
-                ConditionExpression::SimpleExpr(SimpleExpr::binary(prop_name.clone().into(), op, vxpr))
+                ConditionExpression::SimpleExpr(SimpleExpr::binary(prop_name.into(), op, vxpr))
             };
             let binaries_fn = |op: BinaryOper, v: Vec<String>| {
                 let vxpr_list: Vec<SimpleExpr> = v.into_iter().map(Value::from).map(SimpleExpr::from).collect();
                 let vxpr = SimpleExpr::Tuple(vxpr_list);
-                ConditionExpression::SimpleExpr(SimpleExpr::binary(prop_name.clone().into(), op, vxpr))
+                ConditionExpression::SimpleExpr(SimpleExpr::binary(prop_name.into(), op, vxpr))
             };
             let cond_any_of_fn = |op: BinaryOper, values: Vec<String>| {
                 let mut cond = Condition::any();
@@ -203,7 +202,7 @@ mod surrealql {
             };
             let two_args_func_call = |func: Function, v: String, negate: bool| {
                 let mut cond = SimpleExpr::FunctionCall(FunctionCall::new(func).args([
-                    SimpleExpr::Value(prop_name.clone().into()),
+                    SimpleExpr::Value(prop_name.into()),
                     SimpleExpr::Value(v.as_str().into())
                 ]));
                 cond = if negate { cond.not() } else { cond };
@@ -262,15 +261,15 @@ mod surrealql {
 
                 OpValString::Empty(empty) => {
                     let op = if empty { BinaryOper::Equal } else { BinaryOper::NotEqual };
-                    let mut cond = Condition::any().add(surreal_is_value_null(prop_name.clone(), empty));
+                    let mut cond = Condition::any().add(surreal_is_value_null(prop_name, empty));
 
-                    let expr = Expr::expr(Func::len(prop_name.clone())).binary(op, SimpleExpr::Value("0".into()));
+                    let expr = Expr::expr(Func::len(prop_name)).binary(op, SimpleExpr::Value("0".into()));
                     let expr = ConditionExpression::SimpleExpr(expr);
 
                     cond = cond.add(expr);
                     cond.into()
                 }
-                OpValString::Null(null) => surreal_is_value_null(prop_name.clone(), null),
+                OpValString::Null(null) => surreal_is_value_null(prop_name, null),
             };
 
             Ok(cond)

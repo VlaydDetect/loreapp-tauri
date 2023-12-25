@@ -6,7 +6,6 @@
 use std::fmt::Debug;
 use crate::model::store::{Error, Result};
 use surreal_qb::filter::{FilterGroups, ListOptions};
-use crate::model::store::surrealql::build_select_query;
 use crate::model::store::{Creatable, Patchable};
 use crate::prelude::*;
 use serde::de::DeserializeOwned;

@@ -1,5 +1,4 @@
 use crate::{expr::SimpleExpr, types::LogicalChainOper};
-use crate::filter::FilterGroups;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ConditionType {

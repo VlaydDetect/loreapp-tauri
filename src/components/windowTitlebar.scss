@@ -1,0 +1,69 @@
+.titlebar {
+    height: 30pn;
+    background: #080b12;
+    display: flex;
+    justify-content: space-between;
+    position: fixed;
+    user-select: none;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+
+    > div:nth-of-type(2) {
+        display: flex;
+        justify-content: flex-end;
+    }
+}
+
+.titlebarIcon {
+    margin-left: 5px;
+    vertical-align: bottom;
+}
+
+.titlebarLabel {
+    display: inline;
+    margin-left: 5px;
+    line-height: 30px;
+}
+
+.titlebarButton {
+    width: 47px;
+    height: 30px;
+    transition-duration: 200ms;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+
+    > svg {
+        fill: white;
+    }
+}
+
+.titlebarDefaultHover {
+    &:hover {
+        background: #141b2d;
+
+        &:active {
+            background: #1F2A40;
+        }
+    }
+}
+
+.titlebarCloseHover {
+    &:hover {
+        background: #e81123;
+
+        >svg {
+            fill: white;
+        }
+
+        &:active {
+            background: #8b0a14;
+        }
+    }
+}
+
+.verticalAlign {
+    vertical-align: middle;
+}

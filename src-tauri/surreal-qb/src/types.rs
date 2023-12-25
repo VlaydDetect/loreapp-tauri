@@ -3,7 +3,6 @@
 use crate::{expr::*, query::*, FunctionCall};
 pub use std::sync::Arc;
 use surrealdb::sql::Value as SurrealValue;
-use serde_json::Value as Json;
 
 pub trait ValueType: Sized {
     fn try_from(v: Value) -> Result<Self, ValueTypeErr>;
@@ -78,11 +77,13 @@ macro_rules! type_to_value {
 
         impl ValueType for $type {
             fn try_from(v: Value) -> Result<Self, ValueTypeErr> {
-                if let Value(x) = v {
-                    x.try_into().map_err(|_| ValueTypeErr)
-                } else {
-                    Err(ValueTypeErr)
-                }
+                v.0.try_into().map_err(|_| ValueTypeErr)
+
+                // let Value(x) = v {
+                //     x.try_into().map_err(|_| ValueTypeErr)
+                // } else {
+                //     Err(ValueTypeErr)
+                // }
             }
 
             fn type_name() -> String {
