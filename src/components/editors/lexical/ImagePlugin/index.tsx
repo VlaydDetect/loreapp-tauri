@@ -40,7 +40,7 @@ import {DialogActions, DialogButtonsList} from '../ui/Dialog';
 import FileInput from '../ui/FileInput';
 import TextInput from '../ui/TextInput';
 import GalleryInput from "../ui/GalleryInput";
-import {IPicture} from "@/interface";
+import {Picture} from "@/interface";
 import {readFileToDataUrl} from "@/fs/fs";
 
 export type InsertImagePayload = Readonly<ImagePayload>;
@@ -136,10 +136,10 @@ export function InsertImageFromGallery({onClick}: { onClick: (payload: InsertIma
 
     const isDisabled = src === '';
 
-    const loadImage = (picture: IPicture | null) => {
+    const loadImage = (picture: Picture | null) => {
 
         if (picture !== null) {
-            readFileToDataUrl(picture.imgPath).then(data => {
+            readFileToDataUrl(picture.img_path).then(data => {
                 console.log(data)
                 setSrc(data);
             })

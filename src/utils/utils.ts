@@ -10,39 +10,10 @@ export const CAN_USE_DOM: boolean =
     typeof window.document !== 'undefined' &&
     typeof window.document.createElement !== 'undefined';
 
-export function trueTypeOf(obj: any) {
-    return Object.prototype.toString.call(obj).slice(8, -1).toLowerCase()
-    /*
-        []              -> array
-        {}              -> object
-        ''              -> string
-        new Date()      -> date
-        1               -> number
-        function () {}  -> function
-        async function () {}  -> asyncfunction
-        /test/i         -> regexp
-        true            -> boolean
-        null            -> null
-        trueTypeOf()    -> undefined
-    */
-}
-
 // show browser / native notification
 export function notify(title: string, body: string) {
     new Notification(title, { body: body || "", });
 }
-
-type NonEmptyArray<T> = [T, ...T[]]
-
-type MustInclude<T, U extends T[]> = [T] extends [ValueOf<U>] ? U : never;
-
-/**
- *  Use: ValueOf<typeof ...>
- *
- *  Ref: https://youtu.be/VBpmbqTi86Y?t=380
- *  @return: Const Object or Enum as Type
- */
-export type ValueOf<T> = T[keyof T]
 
 export function findDifferences<T extends Object>(obj1: T, obj2: T, parentKey = ''): { diff: string[]; updatedObj: T } {
     const diff: string[] = [];
@@ -145,3 +116,4 @@ function _ensure(obj: any, propName: any, type?: any): any {
     }
     return v;
 }
+

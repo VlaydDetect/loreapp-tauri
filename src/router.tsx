@@ -1,7 +1,7 @@
 import React from "react";
 import {createHashRouter, Outlet} from "react-router-dom";
 import Gallery from "@/pages/Gallery";
-import DetailsWrapper from "@/components/gallery/PictureDetails";
+import PictureDetailsWrapper from "@/components/gallery/PictureDetails";
 import Team from "@/pages/Dashboard/Team";
 import Contacts from "@/pages/Dashboard/Contacts";
 import Invoices from "@/pages/Dashboard/Invoices";
@@ -16,7 +16,6 @@ import Settings from "@/components/settings/Settings";
 import AppSidebar from "@/components/dashboard/global/AppSidebar";
 import Topbar from "@/components/dashboard/global/Topbar";
 import Documents from "@/pages/Documents";
-import {emptyDocument} from "@/interface";
 import DocumentWrapper from "@/components/documents/Document";
 
 const Root: React.FC = () => {
@@ -42,7 +41,7 @@ const router = createHashRouter([
             },
             {
                 path: '/pic-detail/:picId',
-                element: <DetailsWrapper/>
+                element: <PictureDetailsWrapper/>
             },
             {
                 path: '/document/:docId',

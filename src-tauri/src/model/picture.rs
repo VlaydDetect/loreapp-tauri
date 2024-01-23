@@ -5,7 +5,6 @@ use super::bmc_base::{Bmc, bmc_create, bmc_custom_multi_query, bmc_custom_solo_q
 use super::store::{Creatable, Filterable, Patchable, vec_to_surreal_value};
 use super::{ModelMutateResultData, vmap};
 use super::store::x_take::XTake;
-use crate::macros::map;
 use crate::model::{Error, Result};
 use surreal_qb::filter::{FilterNodes, finalize_list_options, ListOptions, OpValsArray, OpValsString};
 use serde::{Deserialize, Serialize};
@@ -15,7 +14,6 @@ use std::sync::Arc;
 use surrealdb::sql::{Object, Value};
 use ts_rs::TS;
 use crate::model::ctx::Ctx;
-use crate::utils::LabelValue;
 
 #[skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, Default, TS, Clone)]
@@ -26,14 +24,14 @@ pub struct Picture {
     pub img_path: String,   // TODO: this can be either a DataURL or an absolute path to the file (under development)
     pub title: Option<String>,
     pub desc: Option<String>,
-    pub tags: Option<Vec<LabelValue>>,
-    pub categories: Option<Vec<LabelValue>>,
+    pub tags: Option<Vec<String>>,
+    pub categories: Option<Vec<String>>,
 }
 
 impl TryFrom<Object> for Picture {
     type Error = Error;
     fn try_from(mut val: Object) -> Result<Picture> {
-        let task = Picture {
+        let picture = Picture {
             id: val.x_take_val("id")?,
             ctime: val.x_take_val("ctime")?,
             img_path: val.x_take_val("img_path")?,
@@ -43,7 +41,7 @@ impl TryFrom<Object> for Picture {
             categories: val.x_take("categories")?,
         };
 
-        Ok(task)
+        Ok(picture)
     }
 }
 
@@ -55,7 +53,7 @@ pub struct PictureForCreate {
 
 impl From<PictureForCreate> for Value {
     fn from(val: PictureForCreate) -> Self {
-        let mut data = map!["img_path".into() => val.img_path.into()];
+        let mut data = vmap!["img_path".into() => val.img_path.into()];
         Value::Object(data.into())
     }
 }
@@ -68,13 +66,13 @@ impl Creatable for PictureForCreate {}
 pub struct PictureForUpdate {
     pub title: Option<String>,
     pub desc: Option<String>,
-    pub tags: Option<Vec<LabelValue>>,
-    pub categories: Option<Vec<LabelValue>>,
+    pub categories: Option<Vec<String>>,
+    pub tags: Option<Vec<String>>,
 }
 
 impl From<PictureForUpdate> for Value {
     fn from(val: PictureForUpdate) -> Self {
-        let mut data = BTreeMap::new();
+        let mut data = vmap!();
         if let Some(title) = val.title {
             data.insert("title".into(), title.into());
         }
@@ -85,7 +83,7 @@ impl From<PictureForUpdate> for Value {
             data.insert("tags".into(), vec_to_surreal_value(tags.into()));
         }
         if let Some(categories) = val.categories {
-            data.insert("tags".into(), vec_to_surreal_value(categories.into()));
+            data.insert("categories".into(), vec_to_surreal_value(categories.into()));
         }
         Value::Object(data.into())
     }
@@ -150,3 +148,22 @@ impl PictureBmc {
         bmc_custom_multi_query::<Picture>(ctx, Self::ENTITY, sqls, vars).await
     }
 }
+
+// #[cfg(test)]
+// mod tests {
+//     use serde_json::json;
+//     use crate::model::PictureFilter;
+//
+//     #[test]
+//     fn test_pictures_filtered_listing() {
+//         let filter: Vec<PictureFilter> = vec![
+//             serde_json::from_value(json!([
+//                 {
+//                     "categories": {
+//                         "$contains": "C1",
+//                     }
+//                 }
+//             ])).unwrap()
+//         ];
+//     }
+// }

@@ -35,6 +35,7 @@ pub mod build_query {
         if let Some(filters) = filters {
             let filters: FilterGroups = filters.into();
             let cond: Condition = filters.try_into().unwrap(); // FIXME
+            println!("{cond:?}");
             query.cond_where(cond);
         }
         list_options.apply_to_surreal_query(&mut query);

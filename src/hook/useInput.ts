@@ -12,16 +12,16 @@ const convert = <I extends TInputValue>(from: I, value: string) => {
     return ''
 }
 
-export function useInput<I extends TInputValue>(initialValue: I): [I, Dispatch<SetStateAction<I>>, (e: TInputChangeEvent) => void, () => void] {
-    const [value, setValue] = useState<string | number | undefined>(initialValue)
+export function useInput(initialValue: string | undefined): [string, Dispatch<SetStateAction<string>>, (e: TInputChangeEvent) => void, () => void] {
+    const [value, setValue] = useState<string>(initialValue ? initialValue : "")
 
     const reset = () => {
-        setValue(initialValue)
+        setValue(initialValue ? initialValue : "")
     }
 
     const onChange = (e: TInputChangeEvent) => {
-        setValue(convert(initialValue, e.target.value))
+        setValue(e.target.value)
     }
 
-    return [value as I, setValue, onChange, reset]
+    return [value, setValue, onChange, reset]
 }

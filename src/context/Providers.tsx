@@ -6,6 +6,8 @@ import { useHotkeys, useInterval } from "@mantine/hooks";
 import { TauriProvider } from "./TauriProvider";
 import { useCookie } from "@/hook/useCookie";
 import { ThemeProvider, createTheme } from '@mui/material/styles';
+import {MobXContext} from "@/context/mobx-context";
+import RootMobxStore from "@/store/root-mobx-store";
 
 const Splashscreen = () => {
 	return (
@@ -84,10 +86,12 @@ export default function Providers({ children }: { children: any }) {
 	return (
 		<MantineProvider theme={theme} withCssVariables>
 			<ModalsProvider>
-				<TauriProvider>
-					<Notifications/>
-					{isLoading ? <Splashscreen/> : children}
-				</TauriProvider>
+				<MobXContext.Provider value={new RootMobxStore()}>
+					<TauriProvider>
+						<Notifications/>
+						{isLoading ? <Splashscreen/> : children}
+					</TauriProvider>
+				</MobXContext.Provider>
 			</ModalsProvider>
 		</MantineProvider>
 	)

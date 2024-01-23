@@ -123,6 +123,10 @@ impl SelectStatement {
         )
     }
 
+    pub fn all_columns(&mut self) -> &mut Self {
+        self.expr(SimpleExpr::Column("*".to_string()))
+    }
+
     /// Select column.
     pub fn expr_as<T>(&mut self, expr: T, alias: String) -> &mut Self
         where T: Into<SimpleExpr>,

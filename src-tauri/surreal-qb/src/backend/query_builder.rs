@@ -711,6 +711,11 @@ pub trait QueryBuilder: QuotedBuilder + EscapeBuilder + TableRefBuilder + OperLe
     }
 
     fn prepare_column(&self, column: &String, sql: &mut dyn SurrelaQLWriter) {
+        // let column = if column == "*" {
+        //     column.clone()
+        // } else {
+        //     format!("type::field({column})")
+        // };
         prepare(column, sql.as_writer(), self.quote());
     }
 

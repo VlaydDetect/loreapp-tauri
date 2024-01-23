@@ -151,7 +151,8 @@ mod surrealql {
 
             let solo_binary_fn = |op: BinaryOper, v: Value| {
                 let vxpr = SimpleExpr::Value(types::Value(v));
-                ConditionExpression::SimpleExpr(SimpleExpr::binary(prop_name.into(), op, vxpr))
+                // ConditionExpression::SimpleExpr(SimpleExpr::binary(prop_name.into(), op, vxpr))
+                ConditionExpression::SimpleExpr(SimpleExpr::binary(SimpleExpr::Column(prop_name.into()), op, vxpr))
             };
 
             let cond = match self {

@@ -3,6 +3,7 @@ mod document;
 mod response;
 mod picture;
 mod settings;
+mod tags_and_categories;
 
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -13,6 +14,7 @@ pub use params::*;
 pub use document::*;
 pub use response::*;
 pub use picture::*;
+pub use tags_and_categories::*;
 pub use settings::*;
 pub(crate) fn into_response<D>(result: crate::model::Result<D>) -> IpcResponse<D>
     where D: Serialize

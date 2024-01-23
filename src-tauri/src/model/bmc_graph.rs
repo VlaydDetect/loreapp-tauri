@@ -1,0 +1,23 @@
+use std::sync::Arc;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
+use surrealdb::sql::Object;
+use crate::model::{Error, Result, ctx::Ctx};
+
+pub(super) trait GraphBmc {
+    const RELATION_ENTITY: &'static str;
+}
+
+pub(super) async fn bmc_relate<E>(ctx: Arc<Ctx>, entity: &'static str, from_id: &str, to_id: &str) -> Result<E>
+    where
+        E: TryFrom<Object, Error = Error> + Sync + Send + DeserializeOwned + Serialize
+{
+    ctx.get_model_manager().store().exec_add_edge(from_id, entity, to_id).await?.try_into()
+}
+
+pub(super) async fn bmc_delete_edge<E>(ctx: Arc<Ctx>, entity: &'static str, from_id: &str, to_id: &str) -> Result<E>
+    where
+        E: TryFrom<Object, Error = Error> + Sync + Send + DeserializeOwned + Serialize
+{
+    ctx.get_model_manager().store().exec_delete_edge(from_id, entity, to_id).await?.try_into()
+}

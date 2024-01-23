@@ -3,7 +3,6 @@ use super::bmc_base::{bmc_create, bmc_delete, bmc_get, bmc_list, bmc_update, Bmc
 use super::store::x_take::XTake;
 use super::store::{Creatable, Filterable, Patchable, vec_to_surreal_value};
 use super::{ModelMutateResultData, vmap};
-use crate::macros::map;
 use crate::model::ctx::Ctx;
 use crate::model::{Error, Result};
 use surreal_qb::filter::{FilterNode, FilterNodes, finalize_list_options, IntoFilterNodes, ListOptions, OpValsArray, OpValsString};
@@ -12,7 +11,6 @@ use serde_with_macros::skip_serializing_none;
 use std::sync::Arc;
 use surrealdb::sql::{Object, Value};
 use ts_rs::TS;
-use crate::utils::LabelValue;
 
 //#region ---------- Document ----------
 /// Name must be unique
@@ -23,8 +21,8 @@ pub struct Document {
     pub title: String,
     pub ctime: String,
     pub body: Option<String>,
-    pub tags: Option<Vec<LabelValue>>,
-    pub categories: Option<Vec<LabelValue>>,
+    pub tags: Option<Vec<String>>,
+    pub categories: Option<Vec<String>>,
     pub used_pics: Option<Vec<String>>
 }
 
@@ -54,7 +52,7 @@ pub struct DocumentForCreate {
 
 impl From<DocumentForCreate> for Value {
     fn from(val: DocumentForCreate) -> Self {
-        let mut data = map!("title".into() => val.title.into());
+        let mut data = vmap!("title".into() => val.title.into());
 
         Value::Object(data.into())
     }
@@ -68,14 +66,14 @@ impl Creatable for DocumentForCreate {}
 pub struct DocumentForUpdate {
     pub title: Option<String>,
     pub body: Option<String>,
-    pub tags: Option<Vec<LabelValue>>,
-    pub categories: Option<Vec<LabelValue>>,
+    pub tags: Option<Vec<String>>,
+    pub categories: Option<Vec<String>>,
     pub used_pics: Option<Vec<String>>
 }
 
 impl From<DocumentForUpdate> for Value {
     fn from(val: DocumentForUpdate) -> Self {
-        let mut data = map!();
+        let mut data = vmap!();
 
         if let Some(title) = val.title {
             data.insert("title".into(), title.into());

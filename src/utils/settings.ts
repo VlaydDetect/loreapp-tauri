@@ -1,4 +1,4 @@
-import {AppSettings, TOption} from "@/interface";
+import {AppSettings, LabelValue} from "@/interface";
 import ipcInvoke from "@/ipc";
 
 //#region -------- Tauri Events --------

@@ -1,7 +1,6 @@
 import {create} from "zustand";
 import {AppSettings} from "@/interface";
 import {immer} from "zustand/middleware/immer";
-import {TOption} from '@/interface'
 
 interface Settings {
     settings: AppSettings,
@@ -9,8 +8,6 @@ interface Settings {
     updateSettings: (updatedSettings: AppSettings) => void,
     changeSettings: <T extends keyof AppSettings>(field: T, value: AppSettings[T]) => void,
     toggleSomethingChanged: () => void,
-    addCategory: (category: TOption) => void,
-    addTag: (tag: TOption) => void,
 }
 
 const defaultSettings: AppSettings = {
@@ -20,8 +17,6 @@ const defaultSettings: AppSettings = {
         cursorPosition: false,
     },
     sortBy: "normal",
-    categories: [],
-    tags: []
 }
 
 const useSettingsStore = create<Settings>()(immer(set => ({
@@ -44,12 +39,6 @@ const useSettingsStore = create<Settings>()(immer(set => ({
             somethingChanged: !state.somethingChanged
         }))
     },
-    addCategory: (category: TOption) => set(state => {
-        state.settings.categories.push(category)
-    }),
-    addTag: (tag: TOption) => set(state => {
-        state.settings.tags.push(tag)
-    }),
 })))
 
 export default useSettingsStore

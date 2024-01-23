@@ -21,12 +21,14 @@ mod store;
 pub mod ctx;
 mod error;
 mod tags_and_categories;
+mod bmc_graph;
 
 // --- Re-exports
 pub use error::{Error, Result};
 pub use model_store::*;
 pub use document::*;
 pub use picture::*;
+pub use tags_and_categories::*;
 // For dev only
 pub use seed_for_dev::seed_store_for_dev;
 
@@ -67,7 +69,7 @@ impl TryFrom<Object> for ModelMutateResultData {
 
 #[cfg(test)]
 mod tests {
-    use modql::filter::{FilterNodes, OpValString, OpValsString};
+    use surreal_qb::filter::{FilterNodes, OpValString, OpValsString};
 
     #[derive(Debug, FilterNodes)]
     struct ProjectFilter {

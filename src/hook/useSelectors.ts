@@ -1,35 +1,85 @@
 import React, {Dispatch, SetStateAction, useState} from "react";
 import {OnChangeValue} from "react-select";
-import {createOption, LabelValue} from "@/interface";
+import {createLabelValue, LabelValue} from "@/interface";
 
-interface IProps {
-    options: LabelValue[],
-    onChangeCallback?: (options: LabelValue | null) => void,
-    onCreateCallback?: (options: LabelValue) => void,
-    defaultValue?: LabelValue,
+type Value = LabelValue | undefined;
+type SetValue = Dispatch<SetStateAction<Value>>;
+type OnChangeValueCallback = (newValue: OnChangeValue<Option, false>) => void;
+
+type Values = LabelValue[];
+type SetValues = Dispatch<SetStateAction<Values>>;
+type OnChangeValuesCallback = (newValue: OnChangeValue<Option, true>) => void;
+
+type Option = LabelValue;
+type OnCreateOptionCallback = (inputValue: string) => void;
+type Options = LabelValue[];
+type SetOptions = Dispatch<SetStateAction<Options>>;
+
+type Props = {
+    options: Options,
+    onChangeCallback?: (options: Value) => void,
+    defaultValue?: Option,
 }
+
+type CreatableProps = Props & { onCreateCallback?: (options: Option) => void, };
 
 interface IMultiProps {
-    options: LabelValue[],
-    onChangeCallback?: (options: LabelValue[]) => void,
-    onCreateCallback?: (options: LabelValue) => void,
-    defaultValue?: LabelValue[],
+    options: Options,
+    onChangeCallback?: (options: Values) => void,
+    defaultValue?: Options,
 }
 
-// type TResult = [LabelValue[], Dispatch<SetStateAction<LabelValue[]>>, () => LabelValue | null | undefined, Dispatch<SetStateAction<LabelValue | null>>, (newValue: OnChangeValue<LabelValue, false>) => void, (inputValue: string) => void]
-// type TMultiResult = [LabelValue[], Dispatch<SetStateAction<LabelValue[]>>, () => LabelValue[], Dispatch<SetStateAction<LabelValue[]>>, (newValue: OnChangeValue<LabelValue, true>) => void, (inputValue: string) => void]
+type CreatableMultiProps = IMultiProps & { onCreateCallback?: (options: Option) => void, };
 
-type TResult = [LabelValue[], Dispatch<SetStateAction<LabelValue[]>>, LabelValue | null | undefined, Dispatch<SetStateAction<LabelValue | null>>, (newValue: OnChangeValue<LabelValue, false>) => void, (inputValue: string) => void]
-type TMultiResult = [LabelValue[], Dispatch<SetStateAction<LabelValue[]>>, LabelValue[], Dispatch<SetStateAction<LabelValue[]>>, (newValue: OnChangeValue<LabelValue, true>) => void, (inputValue: string) => void]
+type Result = {
+    options: Options,
+    setOptions: SetOptions,
+    value: Value,
+    setValue: SetValue,
+    onChangeValue: OnChangeValueCallback,
+}
 
-export function useCreatableSelector({ options, onChangeCallback, onCreateCallback, defaultValue}: IProps): TResult {
+type CreatableResult = Result & { onCreateOption: OnCreateOptionCallback }
+
+type MultiResult = {
+    options: Options,
+    setOptions: SetOptions,
+    values: Values,
+    setValues: SetValues,
+    onChangeValues: OnChangeValuesCallback,
+}
+
+type CreatableMultiResult = MultiResult & { onCreateOption: OnCreateOptionCallback }
+
+export function useMultiSelector({options, onChangeCallback, defaultValue}: IMultiProps): MultiResult {
     const [opts, setOpts] = useState(options);
-    const [value, setValue] = useState(defaultValue ? defaultValue : null);
+    const [values, setValues] = useState(defaultValue ? defaultValue : []);
+    // const getValue = () => values ? opts.filter(c => values.indexOf(c) >= 0) : []
 
-    const getValue = () => value ? opts.find(c => c === value) : null
+    const onChange = (newValue: OnChangeValue<LabelValue, true>) => {
+        setValues(newValue.map(v => v))
+
+        if (onChangeCallback) {
+            onChangeCallback(values)
+        }
+    }
+
+    return {
+        options: opts,
+        setOptions: setOpts,
+        values, setValues,
+        onChangeValues: onChange,
+    }
+}
+
+export function useCreatableSelector({ options, onChangeCallback, onCreateCallback, defaultValue}: CreatableProps): CreatableResult {
+    const [opts, setOpts] = useState(options);
+    const [value, setValue] = useState(defaultValue);
+
+    // const getValue = () => value ? opts.find(c => c === value) : null
 
     const onChange = (newValue: OnChangeValue<LabelValue, false>) => {
-        setValue(newValue ? newValue : null)
+        setValue(newValue ? newValue : undefined)
 
         if (onChangeCallback) {
             onChangeCallback(value)
@@ -37,7 +87,7 @@ export function useCreatableSelector({ options, onChangeCallback, onCreateCallba
     }
 
     const onCreateOption = (inputValue: string) => {
-        const newOption = createOption(inputValue)
+        const newOption = createLabelValue(inputValue)
         setOpts(prev => [...prev, newOption])
 
         setValue(newOption)
@@ -47,14 +97,20 @@ export function useCreatableSelector({ options, onChangeCallback, onCreateCallba
         }
     }
 
-    return [opts, setOpts, value, setValue, onChange, onCreateOption]
+    return {
+        options: opts,
+        setOptions: setOpts,
+        value, setValue,
+        onChangeValue: onChange,
+        onCreateOption: onCreateOption
+    }
 }
 
-export function useMultiCreatableSelector({options, onChangeCallback, onCreateCallback, defaultValue}: IMultiProps): TMultiResult {
+export function useCreatableMultiSelector({options, onChangeCallback, onCreateCallback, defaultValue}: CreatableMultiProps): CreatableMultiResult {
     const [opts, setOpts] = useState(options);
     const [values, setValues] = useState(defaultValue ? defaultValue : []);
 
-    const getValue = () => values ? opts.filter(c => values.indexOf(c) >= 0) : []
+    // const getValue = () => values ? opts.filter(c => values.indexOf(c) >= 0) : []
 
     const onChange = (newValue: OnChangeValue<LabelValue, true>) => {
         setValues(newValue.map(v => v))
@@ -65,7 +121,7 @@ export function useMultiCreatableSelector({options, onChangeCallback, onCreateCa
     }
 
     const onCreateOption = (inputValue: string) => {
-        const newOption = createOption(inputValue)
+        const newOption = createLabelValue(inputValue)
         setOpts(prev => [...prev, newOption])
 
         setValues(prev => [...prev, newOption])
@@ -75,5 +131,11 @@ export function useMultiCreatableSelector({options, onChangeCallback, onCreateCa
         }
     }
 
-    return [opts, setOpts, values, setValues, onChange, onCreateOption]
+    return {
+        options: opts,
+        setOptions: setOpts,
+        values, setValues,
+        onChangeValues: onChange,
+        onCreateOption: onCreateOption
+    }
 }

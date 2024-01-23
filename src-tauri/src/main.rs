@@ -94,6 +94,20 @@ async fn main() -> Result<()> {
 			ipc::list_pictures,
 			ipc::add_picture_from_disk,
 			ipc::collect_picture_from_disk,
+			// Tags & Categories
+			ipc::get_category,
+			ipc::create_category,
+			ipc::update_category,
+			ipc::delete_category,
+			ipc::list_categories,
+			ipc::attach_subcategory,
+			ipc::detach_subcategory,
+			ipc::list_with_parent,
+			ipc::get_tag,
+			ipc::create_tag,
+			ipc::update_tag,
+			ipc::delete_tag,
+			ipc::list_tags,
 			// Utils (not used in front-end)
 			// model::process_pictures,
 		])

@@ -27,12 +27,13 @@ impl<'de> Visitor<'de> for crate::filter::json::ovs_de_array::ArrayOpValsVisitor
         where
             A: SeqAccess<'de>
     {
+        println!("visit_seq");
         let mut array = Vec::<surrealdb::sql::Value>::new();
 
         while let Some(elem) = seq.next_element::<Value>()? {
             array.push(surrealdb::sql::json(elem.to_string().as_str()).unwrap());
         }
-        
+
         Ok(OpValArray::Eq(array.into()).into())
     }
 
@@ -48,6 +49,8 @@ impl<'de> Visitor<'de> for crate::filter::json::ovs_de_array::ArrayOpValsVisitor
             let opval = OpValArray::op_value_to_op_val_type(&k, value).map_err(serde::de::Error::custom)?;
             opvals.push(opval)
         }
+
+        println!("opvals: {opvals:#?}");
 
         Ok(OpValsArray(opvals))
     }

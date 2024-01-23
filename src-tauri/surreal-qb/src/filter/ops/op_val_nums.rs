@@ -189,7 +189,7 @@ mod surrealql {
 	impl $ov {
 		pub fn into_surrealql(self, prop_name: &str) -> SurrealResult<ConditionExpression>  {
 			let binary_fn = |op: BinaryOper, vxpr: SimpleExpr| {
-				ConditionExpression::SimpleExpr(SimpleExpr::binary(prop_name.clone().into(), op, vxpr))
+				ConditionExpression::SimpleExpr(SimpleExpr::binary(SimpleExpr::Column(prop_name.clone().into()), op, vxpr))
 			};
 
 			let cond = match self {

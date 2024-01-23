@@ -23,16 +23,16 @@ surrealdb = {git = "https://github.com/surrealdb/surrealdb.git", branch = "main"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 time = "0.3"
-uuid = "1.6"
-inherent = "1.0"
+uuid = "1.7"
+inherent = "1"
 derivative = { version = "2.2", default-features = false }
 rust_decimal = { version = "1", default-features = false, optional = true }
 bigdecimal = { version = "0.3", default-features = false, optional = true }
 ordered-float = { version = "3.4", default-features = false, optional = true }
 num = "0.4"
-unreachable = "1.0.0"
-matches = { version = "0.1.10", features = [] }
-bytes = "1.4.0"
+unreachable = "1"
+matches = { version = "0.1", features = [] }
+bytes = "1"
 
 [dev-dependencies]
 anyhow = "1"

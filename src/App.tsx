@@ -12,13 +12,15 @@ import { relaunch } from '@tauri-apps/api/process';
 import { checkUpdate, installUpdate } from '@tauri-apps/api/updater';
 import { SystemTrayPayload } from './interface'
 import {getSettings} from "@/utils/settings";
-import useSettingsStore from "@/components/settings/settingsStore";
+import useSettingsStore from "@/store/settingsStore";
 import {PictureDetails} from "@/components/gallery/PictureDetails";
 
 import router from "@/router";
+import {useMobXStores} from "@/context/mobx-context";
 
 const App: React.FC = () => {
-    const updateSettings = useSettingsStore(state => state.updateSettings)
+    const updateSettings = useSettingsStore(state => state.updateSettings);
+    const { tagsAndCategoriesStore: { listTagsAndCategories } } = useMobXStores();
 
     useEffect(() => {
         const initSettings = () => {
@@ -27,6 +29,7 @@ const App: React.FC = () => {
             })
         }
         initSettings()
+        listTagsAndCategories();
     }, []);
 
     //#region -------- Tauri events listener --------

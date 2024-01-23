@@ -42,8 +42,6 @@ pub struct AppSettings {
     pub editor_mode: EditorMode,
     pub editor: EditorSettings,
     pub sort_by: SortBy,
-    pub categories: Vec<LabelValue>,
-    pub tags: Vec<LabelValue>
 }
 
 pub type AppSettingsState = Arc<AppSettings>;
@@ -58,8 +56,6 @@ impl Default for AppSettings {
                 cursor_position: false,
             },
             sort_by: SortBy::Normal,
-            categories: vec![],
-            tags: vec![]
         }
     }
 }

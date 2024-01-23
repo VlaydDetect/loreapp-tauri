@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {IPicture} from "@/interface";
 import {useEffect, useState} from "react";
-import useSettingsStore from "@/components/settings/settingsStore";
+import useSettingsStore from "@/store/settingsStore";
 import {
     createFile,
     filterByExtensions,

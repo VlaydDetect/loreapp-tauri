@@ -35,7 +35,7 @@ impl SurrealStore {
 
     pub(in crate::model) async fn exec_get(&self, tid: &str) -> Result<Object> {
         let sql = "SELECT * FROM $tid";
-        let vars = vmap!["tid".into() => tid.into()];
+        let vars = vmap!["tid".into() => thing(tid)?.into()];
         let mut ress = self.db.query(sql).bind(vars).await?;
 
         solo_response_to_object_vec(ress)?.into_iter().next().ok_or_else(|| Error::UnresolvableResponse("Response is empty")).into()
@@ -46,18 +46,12 @@ impl SurrealStore {
     {
         let sql = "CREATE type::table($tb) CONTENT $data;";
 
-        // let vars = vmap!["tb".into() => tb.into(),"data".into() => data.into()];
-        // println!("vars: {:?}", vars);
-        let mut data: Object = W(data.into()).try_into()?;
         let now = Datetime::default().to_string();
+        let mut data: Object = W(data.into()).try_into()?;
         data.insert("ctime".into(), now.into());
-        self.db.set("tb", tb).await?;
-        self.db.set("data", data).await?;
+        let vars = vmap!["tb".into() => tb.into(), "data".into() => data.into()];
 
-        let mut ress = self.db.query(sql).await?;
-
-        self.db.unset("tb").await?;
-        self.db.unset("data").await?;
+        let mut ress = self.db.query(sql).bind(vars).await?;
 
         solo_response_to_object_vec(ress)?.into_iter().next().ok_or_else(|| Error::UnresolvableResponse("Response is empty")).into()
     }
@@ -66,7 +60,7 @@ impl SurrealStore {
         where T: Patchable + Sync + Send + DeserializeOwned + Serialize
     {
         let sql = "UPDATE $tid MERGE $data";
-        let vars = vmap!["tid".into() => tid.into(),"data".into() => data.into()];
+        let vars = vmap!["tid".into() => thing(tid)?.into(),"data".into() => data.into()];
 
         let mut ress = self.db.query(sql).bind(vars).await?;
 
@@ -74,7 +68,7 @@ impl SurrealStore {
     }
 
     pub(in crate::model) async fn exec_delete(&self, tid: &str) -> Result<Object> {
-        let sql = "DELETE $tid";
+        let sql = "DELETE $tid RETURN BEFORE";
         let vars = vmap!["tid".into() => thing(tid)?.into()];
 
         let mut ress = self.db.query(sql).bind(vars).await?;
@@ -84,19 +78,28 @@ impl SurrealStore {
 
     pub(in crate::model) async fn exec_select<F: Into<FilterGroups>>(&self, tb: &str, filter_groups: Option<F>, list_options: ListOptions) -> Result<Vec<Object>> {
         let (sql, vars) = surreal_qb::build_query::build_select_query(tb.to_string(), filter_groups, list_options);
-        // let filter_or_groups = filter_groups.map(|v| v.into());
-        // let (sql, vars) = build_select_query(tb, filter_or_groups, list_options)?;
-        println!("exec_select SQL: {:?}", sql);
-        println!("exec_select VARS: {:#?}", vars);
 
         let mut ress = self.db.query(&sql).bind(vars).await?;
-        println!("exec_select Response: {:#?}", ress);
 
         solo_response_to_object_vec(ress)
     }
 
-    pub(crate) async fn exec_index() {
-        let sql = "";
+    pub(in crate::model) async fn exec_add_edge(&self, fid: &str, entity: &'static str, tid: &str) -> Result<Object> {
+        let sql = f!("RELATE $fid->{entity}->$tid");
+        let vars = vmap!["fid".into() => thing(fid)?.into(), "tb".into() => entity.into(), "tid".into() => thing(tid)?.into()];
+
+        let mut ress = self.db.query(sql).bind(vars).await?;
+
+        solo_response_to_object_vec(ress)?.into_iter().next().ok_or_else(|| Error::UnresolvableResponse("Response is empty")).into()
+    }
+
+    pub(in crate::model) async fn exec_delete_edge(&self, fid: &str, entity: &'static str, tid: &str) -> Result<Object> {
+        let sql = f!("DELETE $fid->{entity} WHERE out = $tid");
+        let vars = vmap!["fid".into() => thing(fid)?.into(), "tb".into() => entity.into(), "tid".into() => thing(tid)?.into()];
+
+        let mut ress = self.db.query(sql).bind(vars).await?;
+
+        solo_response_to_object_vec(ress)?.into_iter().next().ok_or_else(|| Error::UnresolvableResponse("Response is empty")).into()
     }
 
     pub(crate) fn db(self) -> Box<Surreal<Db>> {
@@ -128,7 +131,6 @@ fn response_to_object_vec(value: Value) -> Result<Vec<Object>> {
     if let Value::Array(Array(val)) = value {
         match val.into_iter().map(|x| W(x).try_into()).collect() {
             Ok(val) => {
-                println!("response_to_object_vec ress var: {:#?}", val);
                 Ok(val)
             },
             Err(err) => Err(err.into())

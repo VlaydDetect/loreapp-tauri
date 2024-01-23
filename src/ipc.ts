@@ -6,8 +6,10 @@ import {InvokeArgs} from "@tauri-apps/api/tauri";
 /**
  * Small wrapper on top of tauri api invoke
  */
-async function ipcInvoke<T>(method: string, params?: InvokeArgs): Promise<T> {
-    const response: IpcResponse<T> = await invoke(method, params);
+async function ipcInvoke<T>(method: string, params?: InvokeArgs, isDB = false): Promise<T> {
+    const paramsObj = isDB ? { params } : params;
+
+    const response: IpcResponse<T> = await invoke(method, paramsObj);
     if (response.error !== null && response.result === null) {
         console.log('ERROR - ipc_invoke - ipc_invoke error', response);
         throw new Error(response.error.message);

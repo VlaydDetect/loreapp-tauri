@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  *
  */
+import * as React from 'react';
 
 import type {EditorState, LexicalEditor, LexicalNode} from 'lexical';
 import {
@@ -13,17 +14,11 @@ import {
     $isElementNode,
     $isParagraphNode,
     CLEAR_EDITOR_COMMAND,
-    COMMAND_PRIORITY_EDITOR,
 } from 'lexical';
-
 import {$createCodeNode, $isCodeNode} from '@lexical/code';
 import {exportFile, importFile} from '@lexical/file';
 import {$convertFromMarkdownString, $convertToMarkdownString,} from '@lexical/markdown';
-import {useCollaborationContext} from '@lexical/react/LexicalCollaborationContext';
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
-import {mergeRegister} from '@lexical/utils';
-import {CONNECTED_COMMAND, TOGGLE_CONNECT_COMMAND} from '@lexical/yjs';
-import * as React from 'react';
 import {useCallback, useEffect, useState} from 'react';
 
 import useModal from './hooks/useModal';
@@ -50,52 +45,15 @@ export default function ActionsPlugin({isRichText}: { isRichText: boolean; }) {
     const [currentEditorState, setCurrentEditorState] = useState<EditorState>(() => editor.getEditorState());
     const [isEditable, setIsEditable] = useState(() => editor.isEditable());
     const [isSpeechToText, setIsSpeechToText] = useState(false);
-    const [connected, setConnected] = useState(false);
     const [isEditorEmpty, setIsEditorEmpty] = useState(true);
     const [modal, showModal] = useModal();
-    const {isCollabActive} = useCollaborationContext();
-
 
     async function sendEditorState(editor: LexicalEditor): Promise<void> {
-        // const stringifiedEditorState = JSON.stringify(editor.getEditorState());
-        // try {
-        //     await fetch('http://localhost:1235/setEditorState', { // TODO
-        //         body: stringifiedEditorState,
-        //         headers: {
-        //             Accept: 'application/json',
-        //             'Content-type': 'application/json',
-        //         },
-        //         method: 'POST',
-        //     });
-        // } catch {
-        //     // NO-OP
-        // }
-
         setCurrentEditorState(editor.getEditorState())
         editor.setEditorState(editor.getEditorState())
     }
 
     async function validateEditorState(editor: LexicalEditor): Promise<void> {
-        // const stringifiedEditorState = JSON.stringify(editor.getEditorState());
-        // let response = null;
-        // try {
-        //     response = await fetch('http://localhost:1235/validateEditorState', { // TODO
-        //         body: stringifiedEditorState,
-        //         headers: {
-        //             Accept: 'application/json',
-        //             'Content-type': 'application/json',
-        //         },
-        //         method: 'POST',
-        //     });
-        // } catch {
-        //     // NO-OP
-        // }
-        // if (response !== null && response.status === 403) {
-        //     throw new Error(
-        //         'Editor state validation failed! Server did not accept changes.',
-        //     );
-        // }
-
         if (currentEditorState !== editor.getEditorState()) {
             throw new Error('Editor state validation failed! Server did not accept changes.');
         }
@@ -108,23 +66,6 @@ export default function ActionsPlugin({isRichText}: { isRichText: boolean; }) {
         setCurrentEditorState(editor.getEditorState())
     }
 
-
-    useEffect(() => {
-        return mergeRegister(
-            editor.registerEditableListener((editable) => {
-                setIsEditable(editable);
-            }),
-            editor.registerCommand<boolean>(
-                CONNECTED_COMMAND,
-                (payload) => {
-                    setConnected(payload);
-                    return false;
-                },
-                COMMAND_PRIORITY_EDITOR,
-            ),
-        );
-    }, [editor]);
-
     useEffect(() => {
         return editor.registerUpdateListener(
             ({dirtyElements, prevEditorState, tags}) => {
@@ -133,8 +74,7 @@ export default function ActionsPlugin({isRichText}: { isRichText: boolean; }) {
                 if (
                     !isEditable &&
                     dirtyElements.size > 0 &&
-                    !tags.has('historic') &&
-                    !tags.has('collaboration')
+                    !tags.has('historic')
                 ) {
                     validateEditorState(editor);
                 }
@@ -248,21 +188,6 @@ export default function ActionsPlugin({isRichText}: { isRichText: boolean; }) {
                 aria-label="Convert from markdown">
                 <i className="markdown" />
             </button>
-            {isCollabActive && (
-                <button
-                    className="action-button connect"
-                    onClick={() => {
-                        editor.dispatchCommand(TOGGLE_CONNECT_COMMAND, !connected);
-                    }}
-                    title={`${
-                        connected ? 'Disconnect' : 'Connect'
-                    } Collaborative Editing`}
-                    aria-label={`${
-                        connected ? 'Disconnect from' : 'Connect to'
-                    } a collaborative editing server`}>
-                    <i className={connected ? 'disconnect' : 'connect'} />
-                </button>
-            )}
             {modal}
         </div>
     );

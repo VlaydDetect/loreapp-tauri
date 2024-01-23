@@ -61,7 +61,7 @@ export async function createDirectory({path, recursive = false, inBaseDir = fals
     }
 }
 
-export async function choosePictureFile(multiple = false, defaultPath?: string): Promise<null | string | string[]> {
+export async function choosePictureFile(multiple = false, defaultPath?: string): ReturnType<typeof chooseFileDialog> {
     return chooseFileDialog({multiple, defaultPath, filters: [ImageFilter]})
 }
 
