@@ -44,6 +44,10 @@ const router = createHashRouter([
                 element: <PictureDetailsWrapper/>
             },
             {
+                path: '/documents',
+                element: <Documents />,
+            },
+            {
                 path: '/document/:docId',
                 element: <DocumentWrapper/>
             },

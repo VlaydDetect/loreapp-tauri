@@ -89,6 +89,10 @@ class CategoryFmc extends BaseFmc<Category, CategoryForCreate, CategoryForUpdate
         return ipcInvoke<CategoriesTree>("detach_subcategory", { id, subId });
     }
 
+    async reattachSubcategory(id: string, fromId: string | undefined, toId: string | undefined) {
+        return ipcInvoke<CategoriesTree>("reattach_subcategory", { id, fromId, toId });
+    }
+
     async listWithParent() {
         return ipcInvoke<CategoriesTree>("list_with_parent", {}, true);
     }

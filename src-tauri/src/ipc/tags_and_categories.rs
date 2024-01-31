@@ -72,6 +72,18 @@ pub async fn detach_subcategory(app: AppHandle<Wry>, id: String, sub_id: String)
 }
 
 #[command]
+pub async fn reattach_subcategory(app: AppHandle<Wry>, id: String, from_id: Option<String>, to_id: Option<String>) -> IpcResponse<CategoriesTree> {
+    match Ctx::from_app(app) {
+        Ok(ctx) => {
+            let from_id = from_id.as_ref().map(String::as_str);
+            let to_id = to_id.as_ref().map(String::as_str);
+            into_response(CategoryBmc::reattach_subcategory(ctx, id.as_str(), from_id, to_id).await)
+        },
+        Err(_) => Err(Error::Model(ModelError::CtxFail)).into(),
+    }
+}
+
+#[command]
 pub async fn list_with_parent(app: AppHandle<Wry>) -> IpcResponse<CategoriesTree> {
     match Ctx::from_app(app) {
         Ok(ctx) => into_response(CategoryBmc::list_with_parent(ctx).await),

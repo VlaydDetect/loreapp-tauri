@@ -1,10 +1,10 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import { RouterProvider } from "react-router-dom";
 import "./assets/App.css";
 import { ColorModeContext, useMode } from "./theme";
 import { CssBaseline, ThemeProvider } from "@mui/material";
 
-import { ActionIcon, AppShell, Burger, Button, Group, Space, Text, useMantineColorScheme } from '@mantine/core';
+import { Button, Text, useMantineColorScheme } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 
 import * as tauriEvent from '@tauri-apps/api/event';
@@ -13,7 +13,6 @@ import { checkUpdate, installUpdate } from '@tauri-apps/api/updater';
 import { SystemTrayPayload } from './interface'
 import {getSettings} from "@/utils/settings";
 import useSettingsStore from "@/store/settingsStore";
-import {PictureDetails} from "@/components/gallery/PictureDetails";
 
 import router from "@/router";
 import {useMobXStores} from "@/context/mobx-context";
@@ -89,19 +88,6 @@ const App: React.FC = () => {
         <ColorModeContext.Provider value={colorMode}>
             <ThemeProvider theme={theme}>
                 <CssBaseline />
-                {/*<div className="App">*/}
-                {/*    <Sidebar />*/}
-                {/*    <main className="content">*/}
-                {/*        <Topbar />*/}
-                {/*        <Routes>*/}
-                {/*            {*/}
-                {/*                routes.map((route, index) => (*/}
-                {/*                    <Route key={index} path={route.path} element={route.component} />*/}
-                {/*                ))*/}
-                {/*            }*/}
-                {/*        </Routes>*/}
-                {/*    </main>*/}
-                {/*</div>*/}
                 <div className="App">
                     <RouterProvider router={router}/>
                 </div>

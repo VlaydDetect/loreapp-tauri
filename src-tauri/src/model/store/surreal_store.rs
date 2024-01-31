@@ -38,7 +38,7 @@ impl SurrealStore {
         let vars = vmap!["tid".into() => thing(tid)?.into()];
         let mut ress = self.db.query(sql).bind(vars).await?;
 
-        solo_response_to_object_vec(ress)?.into_iter().next().ok_or_else(|| Error::UnresolvableResponse("Response is empty")).into()
+        solo_response_to_object(ress)
     }
 
     pub(in crate::model) async fn exec_create<T>(&self, tb: &str, data: T) -> Result<Object>
@@ -53,7 +53,7 @@ impl SurrealStore {
 
         let mut ress = self.db.query(sql).bind(vars).await?;
 
-        solo_response_to_object_vec(ress)?.into_iter().next().ok_or_else(|| Error::UnresolvableResponse("Response is empty")).into()
+        solo_response_to_object(ress)
     }
 
     pub(in crate::model) async fn exec_merge<T>(&self, tid: &str, data: T) -> Result<Object>
@@ -64,7 +64,7 @@ impl SurrealStore {
 
         let mut ress = self.db.query(sql).bind(vars).await?;
 
-        solo_response_to_object_vec(ress)?.into_iter().next().ok_or_else(|| Error::UnresolvableResponse("Response is empty")).into()
+        solo_response_to_object(ress)
     }
 
     pub(in crate::model) async fn exec_delete(&self, tid: &str) -> Result<Object> {
@@ -73,7 +73,7 @@ impl SurrealStore {
 
         let mut ress = self.db.query(sql).bind(vars).await?;
 
-        solo_response_to_object_vec(ress)?.into_iter().next().ok_or_else(|| Error::UnresolvableResponse("Response is empty")).into()
+        solo_response_to_object(ress)
     }
 
     pub(in crate::model) async fn exec_select<F: Into<FilterGroups>>(&self, tb: &str, filter_groups: Option<F>, list_options: ListOptions) -> Result<Vec<Object>> {
@@ -90,16 +90,44 @@ impl SurrealStore {
 
         let mut ress = self.db.query(sql).bind(vars).await?;
 
-        solo_response_to_object_vec(ress)?.into_iter().next().ok_or_else(|| Error::UnresolvableResponse("Response is empty")).into()
+        solo_response_to_object(ress)
     }
 
     pub(in crate::model) async fn exec_delete_edge(&self, fid: &str, entity: &'static str, tid: &str) -> Result<Object> {
-        let sql = f!("DELETE $fid->{entity} WHERE out = $tid");
+        let sql = f!("DELETE $fid->{entity} WHERE out = $tid RETURN BEFORE");
         let vars = vmap!["fid".into() => thing(fid)?.into(), "tb".into() => entity.into(), "tid".into() => thing(tid)?.into()];
 
         let mut ress = self.db.query(sql).bind(vars).await?;
 
-        solo_response_to_object_vec(ress)?.into_iter().next().ok_or_else(|| Error::UnresolvableResponse("Response is empty")).into()
+        solo_response_to_object(ress)
+    }
+
+    pub(in crate::model) async fn exec_recreate_edge(&self, id: &str, entity: &'static str, from_id: Option<&str>, to_id: Option<&str>) -> Result<Object> {
+        match from_id {
+            None => {
+                return match to_id {
+                    None => {
+                        Err(Error::UnresolvableResponse("Both 'from_id' and 'to_id' ids don't be None"))
+                    }
+                    Some(to_id) => {
+                        self.exec_add_edge(to_id, entity, id).await
+                    }
+                }
+            }
+            Some(from_id) => {
+                match to_id {
+                    None => {
+                        self.exec_delete_edge(from_id, entity, id).await
+                    }
+                    Some(to_id) => {
+                        let sql = f!("BEGIN; DELETE $fid->{entity} WHERE out = $id; RELATE $tid->{entity}->$id; COMMIT;");
+                        let vars = vmap!("fid".into() => thing(from_id)?.into(), "id".into() => thing(id)?.into(), "tid".into() => thing(to_id)?.into());
+                        let mut ress = self.db.query(sql).bind(vars).await?;
+                        multi_response_to_object_vec(ress, 1)?.into_iter().next().ok_or_else(|| Error::UnresolvableResponse("Response is empty")).into()
+                    }
+                }
+            }
+        }
     }
 
     pub(crate) fn db(self) -> Box<Surreal<Db>> {
@@ -120,6 +148,10 @@ impl SurrealStore {
 fn solo_response_to_object_vec(mut response: Response) -> Result<Vec<Object>> {
     let ress: Value = response.take(0)?;
     response_to_object_vec(ress)
+}
+
+fn solo_response_to_object(mut response: Response) -> Result<Object> {
+    solo_response_to_object_vec(response)?.into_iter().next().ok_or_else(|| Error::UnresolvableResponse("Response is empty")).into()
 }
 
 fn multi_response_to_object_vec(mut response: Response, to_take: usize) -> Result<Vec<Object>> {

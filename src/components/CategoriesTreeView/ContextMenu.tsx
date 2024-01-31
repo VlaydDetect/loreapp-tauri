@@ -42,7 +42,6 @@ export const showContextMenu = (
 
 export const handleMenuAction = (
     action: EMenuAction,
-    node: CategoryNode | undefined,
     setAnchorPosition: React.Dispatch<React.SetStateAction<PopoverPosition | undefined>>,
     setSelectedAction: React.Dispatch<React.SetStateAction<EMenuAction | undefined>>,
     setOpenModal: React.Dispatch<React.SetStateAction<boolean>>
@@ -51,29 +50,6 @@ export const handleMenuAction = (
 
     setSelectedAction(action);
     setOpenModal(true);
-
-    // if (node) {
-    //     setSelectedAction(action);
-    //
-    //     // TODO: open modal, pre-list all the categories for comparing names (the name is the category id)
-    //     //       or on each validation try to get a category by the entered name
-    //     //       and if it was received then the entered name is not valid
-    //
-    //     setOpenModal(true);
-    //     console.log(openModal)
-    //
-    //     switch (action) {
-    //         case EMenuAction.Create: {
-    //             // toggle modal menu
-    //         }
-    //         case EMenuAction.Rename: {
-    //
-    //         }
-    //         case EMenuAction.Delete: {
-    //
-    //         }
-    //     }
-    // }
 };
 
 type TItemProps = {
@@ -93,7 +69,7 @@ export const Item: React.FC<TItemProps> = (
         setOpenModal
     }
 ) => (
-    <MenuItem onClick={() => handleMenuAction(action, selectedNode, setAnchorPosition, setSelectedAction, setOpenModal)}>
+    <MenuItem onClick={() => handleMenuAction(action, setAnchorPosition, setSelectedAction, setOpenModal)}>
         {text}
     </MenuItem>
 )

@@ -1,7 +1,8 @@
+import React from 'react';
 import Masonry from "react-masonry-css";
 import PictureView from './PictureView'
 import {CategoryNode, Picture} from "@/interface";
-import {Box, Typography, Button, IconButton, useTheme, Stack} from "@mui/material";
+import {Box, Typography, Button, useTheme, Stack} from "@mui/material";
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import DriveFolderUploadIcon from '@mui/icons-material/DriveFolderUpload';
 import {useEffect, useState} from "react";
@@ -27,7 +28,6 @@ const GalleryLayout = () => {
 
 	if (loading) return <Spinner message="Loading" />
 
-
 	useEffect(() => {
 		picFmc.list().then(content => {
 			// console.log(content);
@@ -45,7 +45,6 @@ const GalleryLayout = () => {
 		];
 
 		picFmc.list(filter).then(content => {
-			console.log(`categoriesTreeHandler: ${JSON.stringify(content)}`);
 			setPictures(content)
 		})
 	};
@@ -89,6 +88,14 @@ const GalleryLayout = () => {
 				<CategoriesTreeView doubleClickHandler={categoriesTreeHandler}/>
 			</div>
 			<div className="col-span-2">
+				<Stack direction="row" spacing={2}>
+					<Button variant="contained" endIcon={<UploadFileIcon/>} onClick={onUploadPicture}>
+						Upload Picture
+					</Button>
+					<Button variant="contained" endIcon={<DriveFolderUploadIcon/>} onClick={onUploadFolder}>
+						Upload Folder
+					</Button>
+				</Stack>
 				{pictures.length !== 0 ? (
 					<Masonry className="flex animate-slide-fwd" breakpointCols={breakpointObj}>
 						{pictures.map(picture => (<PictureView key={picture.id} picture={picture} className="w-max"/>))}
@@ -97,16 +104,7 @@ const GalleryLayout = () => {
 					<Box
 						className="flex justify-center items-center bg-indigo-800 rounded-full w-max ml-auto mr-auto p-2">
 						<Typography variant="h3" className="p-2 text-center">Gallery is Empty Now</Typography>
-						<Typography variant="subtitle1" className="p-2 text-center">Please, upload your pictures to the
-							Gallery</Typography>
-						<Stack direction="row" spacing={2}>
-							<Button variant="contained" endIcon={<UploadFileIcon/>} onClick={onUploadPicture}>
-								Upload Picture
-							</Button>
-							<Button variant="contained" endIcon={<DriveFolderUploadIcon/>} onClick={onUploadFolder}>
-								Upload Folder
-							</Button>
-						</Stack>
+						<Typography variant="subtitle1" className="p-2 text-center">Please, upload your pictures to the Gallery</Typography>
 					</Box>
 				)}
 			</div>

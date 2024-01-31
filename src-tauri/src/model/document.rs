@@ -18,6 +18,7 @@ use ts_rs::TS;
 #[derive(Debug, Serialize, Deserialize, Default, TS, Clone)]
 #[ts(export, export_to = "../src/interface/")]
 pub struct Document {
+    pub id: String,
     pub title: String,
     pub ctime: String,
     pub body: Option<String>,
@@ -30,6 +31,7 @@ impl TryFrom<Object> for Document {
     type Error = Error;
     fn try_from(mut val: Object) -> Result<Document> {
         let document = Document {
+            id: val.x_take_val("id")?,
             title: val.x_take_val("title")?,
             ctime: val.x_take_val("ctime")?,
             body: val.x_take("body")?,

@@ -78,7 +78,7 @@ ts-rs = "7"
 thiserror = "1"
 lazy_static = "1.4.0"
 fuzzy-matcher = "*"
-strum_macros = "0.25.3"
+strum_macros = "0.26.1"
 #
 
 [dev-dependencies]

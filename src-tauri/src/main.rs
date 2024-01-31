@@ -60,9 +60,6 @@ async fn main() -> Result<()> {
 
 	let app_context = Arc::new(ApplicationContext::new().await);
 
-	// for dev only
-	// seed_store_for_dev(&app_context).await?;
-
 	let system_tray_en = create_tray("en", "main-tray");
 
 	tauri::Builder::default()
@@ -102,6 +99,7 @@ async fn main() -> Result<()> {
 			ipc::list_categories,
 			ipc::attach_subcategory,
 			ipc::detach_subcategory,
+			ipc::reattach_subcategory,
 			ipc::list_with_parent,
 			ipc::get_tag,
 			ipc::create_tag,

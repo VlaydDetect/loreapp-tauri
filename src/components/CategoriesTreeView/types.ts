@@ -1,8 +1,6 @@
 import React from "react";
 
-export type TDragEvent = React.DragEvent<HTMLLIElement>;
-export type TMouseEvent = React.MouseEvent<HTMLElement, MouseEvent>;
-export type TSelectEvent = React.SyntheticEvent<Element, Event>;
+export type TMouseEvent = React.MouseEvent<Element, MouseEvent>;
 
 export enum EMenuAction {
     Create,

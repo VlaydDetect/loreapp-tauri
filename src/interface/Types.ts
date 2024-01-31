@@ -27,46 +27,31 @@ export const findLabelValueByValue = (options: LabelValue[], value: string) => {
     return options.find(opt => opt.value === value)
 }
 
-export const findCategoryNodeInTree = (nodeId: string, tree: CategoriesTree): CategoryNode | undefined => {
+export const findCategoryParent = (id: string, tree: CategoriesTree): CategoryNode | undefined => {
     if (tree.nodes.length === 0) return undefined;
+    const findInChildren = (node: CategoryNode): CategoryNode | undefined => {
+        if (node.children.length === 0) return undefined;
 
-    let visited = tree.nodes.map(() => new Set<CategoryNode>());
-    let stacks = tree.nodes.map(root => [root]);
+        for (const child of node.children) {
+            if (child.id === id) return child;
 
-    while (stacks.some(stacks => stacks.length)) {
-        for (let i = 0; i < stacks.length; i++) {
-            let node = stacks[i].pop() as CategoryNode;
-
-            if (node.id === nodeId) return node;
-            visited[i].add(node);
-
-            for (const child of node.children) {
-                if (!visited[i].has(child)) {
-                    stacks[i].push(child);
-                }
-            }
+            let parent = findInChildren(child);
+            if (parent) return child;
         }
+
+        return undefined;
+    }
+
+    for (const node of tree.nodes) {
+        if (node.id === id) return undefined;
+
+        const parent = findInChildren(node);
+        if (parent) return node;
     }
 
     return undefined;
+}
 
-    // const found = (node: CategoryNode): CategoryNode | undefined => {
-    //     if (node.name === nodeId) return node;
-    //
-    //     if (node.children) {
-    //         for (const child of node.children) {
-    //             const foundNode = found(child);
-    //             if (foundNode) return foundNode;
-    //         }
-    //     }
-    //
-    //     return undefined;
-    // }
-    //
-    // for (const node of tree.nodes) {
-    //     const foundNode = found(node);
-    //     if (foundNode) return foundNode;
-    // }
-    //
-    // return undefined;
+export const isCategoryChild = (id: string, tree: CategoriesTree): boolean => {
+    return !!findCategoryParent(id, tree);
 }

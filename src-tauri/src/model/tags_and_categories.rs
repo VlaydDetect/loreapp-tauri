@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use serde_with_macros::skip_serializing_none;
 use surrealdb::sql::{Object, Value};
 use ts_rs::TS;
-use crate::model::bmc_graph::{bmc_delete_edge, bmc_relate, GraphBmc};
+use crate::model::bmc_graph::{bmc_delete_edge, bmc_relate, bmc_rerelate_edge, GraphBmc};
 use crate::model::ctx::Ctx;
 use crate::prelude::f;
 use crate::utils::LabelValue;
@@ -43,9 +43,9 @@ impl TryFrom<Object> for Categories {
 #[skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, Default, TS, Clone)]
 #[ts(export, export_to = "../src/interface/")]
-struct CategoryWithParent {
-    category: Category,
-    parent: Option<Category>,
+pub struct CategoryWithParent {
+    pub category: Category,
+    pub parent: Option<String>,
 }
 
 impl TryFrom<Object> for CategoryWithParent {
@@ -57,18 +57,14 @@ impl TryFrom<Object> for CategoryWithParent {
             name: val.x_take_val("name")?,
         };
 
-        let mut parent: Option<Category> = None;
+        let mut parent: Option<String> = None;
         let parent_obj = val.remove("parent");
 
         if let Some(parent_obj) = parent_obj {
             if let Value::Array(surrealdb::sql::Array(parent_obj_vec)) = parent_obj {
                 if let Some(parent_obj) = parent_obj_vec.iter().next() {
-                    if let Value::Object(mut parent_obj) = parent_obj.clone() {
-                        parent = Some(Category {
-                            id: parent_obj.x_take_val("id")?,
-                            ctime: parent_obj.x_take_val("ctime")?,
-                            name: parent_obj.x_take_val("name")?,
-                        });
+                    if let Value::Thing(parent_obj) = parent_obj.clone() {
+                        parent = Some(parent_obj.to_raw());
                     }
                 }
             }
@@ -83,7 +79,7 @@ impl TryFrom<Object> for CategoryWithParent {
     }
 }
 
-#[derive(Debug, Serialize, Default, TS, Clone)]
+#[derive(Debug, Serialize, Default, TS, Clone, PartialEq)]
 #[ts(export, export_to = "../src/interface/")]
 pub struct CategoryNode {
     id: String,
@@ -93,50 +89,67 @@ pub struct CategoryNode {
     children: Vec<CategoryNode>
 }
 
-#[derive(Debug, Serialize, Default, TS)]
+#[derive(Debug, Serialize, Default, TS, PartialEq)]
 #[ts(export, export_to = "../src/interface/")]
 pub struct CategoriesTree {
     nodes: Vec<CategoryNode>
 }
 
-fn build_categories_tree(mut categories_with_parents: Vec<CategoryWithParent>) -> CategoriesTree {
-    categories_with_parents.par_sort_by(|a, b| a.category.name.cmp(&b.category.name));
-    categories_with_parents.reverse();
+pub fn build_categories_tree(mut cwps: Vec<CategoryWithParent>) -> CategoriesTree {
+    fn recursive_loop<'a>(node: &'a mut CategoryNode, id: &String) -> Option<&'a mut CategoryNode> {
+        if (node.id.eq(id)) { return Some(node); }
 
-    let mut category_map: HashMap<String, CategoryNode> = HashMap::new();
-    let mut root_categories: Vec<CategoryNode> = Vec::new();
+        for child in node.children.iter_mut() {
+            if let Some(find) = recursive_loop(child, id) {
+                return Some(find);
+            }
+        }
 
-    for CategoryWithParent { category, parent } in categories_with_parents {
-        let node = category_map
-            .entry(category.name.clone())
-            .or_insert_with(|| CategoryNode {
-                id: category.id.clone(),
-                ctime: category.ctime.clone(),
-                name: category.name.clone(),
-                children: Vec::new(),
-            }).clone();
+        None
+    };
 
-        if let Some(parent) = parent {
-            let parent_node = category_map
-                .entry(parent.name.clone())
-                .or_insert_with(|| CategoryNode {
-                    id: parent.id.clone(),
-                    ctime: parent.ctime.clone(),
-                    name: parent.name.clone(),
-                    children: Vec::new(),
-                });
+    let mut categories_map = HashMap::<String, CategoryNode>::new();
+    let mut root_ids = Vec::<String>::new();
 
-            parent_node.children.push(node.clone());
-            // parent_node.children.sort_by(|a, b| a.name.cmp(&b.name));
-        } else {
-            root_categories.push(node.clone());
+    for cwp in &cwps {
+        categories_map.insert(cwp.category.id.clone(), CategoryNode {
+            id: cwp.category.id.clone(),
+            name: cwp.category.name.clone(),
+            ctime: cwp.category.ctime.clone(),
+            children: vec![],
+        });
+        if cwp.parent.is_none() {
+            root_ids.push(cwp.category.id.clone());
         }
     }
 
-    // root_categories.sort_by(|a, b| a.name.cmp(&b.name));
+    for cwp in cwps {
+        if let Some(parent_id) = cwp.parent {
+            if let Some(child_node) = categories_map.remove(&cwp.category.id) {
+                if let Some(mut parent_node) = categories_map.remove(&parent_id) {
+                    parent_node.children.push(child_node.clone());
+                    categories_map.insert(parent_id, parent_node);
+                } else {
+                    for (_, node) in categories_map.iter_mut() {
+                        if let Some(parent_node) = recursive_loop(node, &parent_id) {
+                            parent_node.children.push(child_node.clone());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    let mut root_nodes = Vec::<CategoryNode>::new();
+
+    for id in root_ids {
+        if let Some(node) = categories_map.remove(&id) {
+            root_nodes.push(node);
+        }
+    }
 
     CategoriesTree {
-        nodes: root_categories
+        nodes: root_nodes,
     }
 }
 //#endregion -------------------------------- Relation Table --------------------------------
@@ -253,11 +266,17 @@ impl CategoryBmc {
         Self::list_with_parent(ctx).await
     }
 
+    pub async fn reattach_subcategory(ctx: Arc<Ctx>, id: &str, from_id: Option<&str>, to_id: Option<&str>) -> Result<CategoriesTree> {
+        bmc_rerelate_edge::<Categories>(ctx.clone(), Self::RELATION_ENTITY, id, from_id, to_id).await?;
+        Self::list_with_parent(ctx).await
+    }
+
     pub async fn list_with_parent(ctx: Arc<Ctx>) -> Result<CategoriesTree> {
-        let sql = f!("SELECT *, <-{}<-category.* AS parent FROM category ORDER BY id ASC;", Self::RELATION_ENTITY).into_boxed_str();
+        let sql = f!("SELECT *, <-{}<-category.id AS parent FROM category ORDER BY id ASC;", Self::RELATION_ENTITY).into_boxed_str();
         let vars = vmap!["tb".into() => Self::RELATION_ENTITY.into()];
         let cwps = bmc_custom_solo_query::<CategoryWithParent>(ctx, Self::ENTITY, &sql, vars.into()).await?;
-        Ok(build_categories_tree(cwps))
+        let tree = build_categories_tree(cwps);
+        Ok(tree)
     }
 }
 //#endregion -------------------------------- Category Table --------------------------------
@@ -360,3 +379,132 @@ impl TagBmc {
 }
 //#endregion -------------------------------- Tag Table --------------------------------
 //#endregion -------------------------------- Tags --------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_tree_build_1() {
+        let cwps = vec![
+            CategoryWithParent {
+                category: Category {
+                    id: "category:8aevtugsorhcjs3gcv3c".into(),
+                    name: "C1".into(),
+                    ctime: "".into(),
+                },
+                parent: None
+            },
+            CategoryWithParent {
+                category: Category {
+                    id: "category:p0t3l8nfkxwd064qhjkh".into(),
+                    name: "C2".into(),
+                    ctime: "".into(),
+                },
+                parent: Some("category:8aevtugsorhcjs3gcv3c".into())
+            },
+            CategoryWithParent {
+                category: Category {
+                    id: "category:qmmro25o7cuwxhotgtys".into(),
+                    name: "SC1".into(),
+                    ctime: "".into(),
+                },
+                parent: Some("category:p0t3l8nfkxwd064qhjkh".into())
+            },
+        ];
+
+        let result_tree = build_categories_tree(cwps);
+        let expected_result = CategoriesTree {
+            nodes: vec![
+                CategoryNode {
+                    id: "category:8aevtugsorhcjs3gcv3c".into(),
+                    ctime: "".into(),
+                    name: "C1".into(),
+                    children: vec![
+                        CategoryNode {
+                            id: "category:p0t3l8nfkxwd064qhjkh".into(),
+                            name: "C2".into(),
+                            ctime: "".into(),
+                            children: vec![
+                                CategoryNode {
+                                    id: "category:qmmro25o7cuwxhotgtys".into(),
+                                    name: "SC1".into(),
+                                    ctime: "".into(),
+                                    children: vec![]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+
+        assert_eq!(result_tree, expected_result);
+    }
+
+    // #[test]
+    // fn test_tree_build_2() {
+    //     let cwps = vec![
+    //         CategoryWithParent {
+    //             category: Category {
+    //                 id: "category:8aevtugsorhcjs3gcv3c".into(),
+    //                 name: "C1".into(),
+    //                 ctime: "".into(),
+    //             },
+    //             parent: None
+    //         },
+    //         CategoryWithParent {
+    //             category: Category {
+    //                 id: "category:p0t3l8nfkxwd064qhjkh".into(),
+    //                 name: "C2".into(),
+    //                 ctime: "".into(),
+    //             },
+    //             parent: Some(Category {
+    //                 id: "category:8aevtugsorhcjs3gcv3c".into(),
+    //                 name: "C1".into(),
+    //                 ctime: "".into(),
+    //             },)
+    //         },
+    //         CategoryWithParent {
+    //             category: Category {
+    //                 id: "category:qmmro25o7cuwxhotgtys".into(),
+    //                 name: "SC1".into(),
+    //                 ctime: "".into(),
+    //             },
+    //             parent: Some(Category {
+    //                 id: "category:p0t3l8nfkxwd064qhjkh".into(),
+    //                 name: "C2".into(),
+    //                 ctime: "".into(),
+    //             })
+    //         },
+    //     ];
+    //
+    //     let result_tree = build_categories_tree(cwps);
+    //     let expected_result = CategoriesTree {
+    //         nodes: vec![
+    //             CategoryNode {
+    //                 id: "category:8aevtugsorhcjs3gcv3c".into(),
+    //                 ctime: "".into(),
+    //                 name: "C1".into(),
+    //                 children: vec![
+    //                     CategoryNode {
+    //                         id: "category:p0t3l8nfkxwd064qhjkh".into(),
+    //                         name: "C2".into(),
+    //                         ctime: "".into(),
+    //                         children: vec![
+    //                             CategoryNode {
+    //                                 id: "category:qmmro25o7cuwxhotgtys".into(),
+    //                                 name: "SC1".into(),
+    //                                 ctime: "".into(),
+    //                                 children: vec![]
+    //                             }
+    //                         ]
+    //                     }
+    //                 ]
+    //             }
+    //         ]
+    //     };
+    //
+    //     assert_eq!(result_tree, expected_result);
+    // }
+}
