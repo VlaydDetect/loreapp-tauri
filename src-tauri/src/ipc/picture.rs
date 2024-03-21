@@ -68,21 +68,31 @@ pub async fn get_document_used_in(app: AppHandle<Wry>, id: String) -> IpcRespons
 }
 
 #[command]
-pub async fn add_picture_from_disk(app: AppHandle<Wry>, path: String) -> IpcResponse<Picture> {
-    let data_ulr = read_file_as_data_url(path).unwrap();
-    create_picture(app, CreateParams {
-        data: PictureForCreate {
-            img_path: data_ulr
-        }
-    }).await
+pub async fn get_picture_with_url(app: AppHandle<Wry>, id: String) -> IpcResponse<Picture> {
+    match Ctx::from_app(app) {
+        Ok(ctx) => into_response(PictureBmc::get_with_url(ctx, id.as_str()).await),
+        Err(_) => Err(Error::Model(ModelError::CtxFail)).into(),
+    }
 }
 
 #[command]
-pub async fn collect_picture_from_disk(app: AppHandle<Wry>, dir_path: String) -> IpcResponse<Vec<Picture>> {
-    // let mut data_urls = HashMap::<String, MainResult<String>>::new();
-    let mut data_urls = HashMap::<String, String>::new();
+pub async fn list_pictures_with_urls(app: AppHandle<Wry>, filter: Option<Value>, list_options: Option<ListOptions>) -> IpcResponse<Vec<Picture>> {
+    match Ctx::from_app(app) {
+        Ok(ctx) => {
+            match filter.map(serde_json::from_value).transpose() {
+                Ok(filter) => into_response(PictureBmc::list_with_urls(ctx, filter, list_options).await),
+                Err(err) => Err(Error::JsonSerde(err)).into(),
+            }
+        },
+        Err(_) => Err(Error::Model(ModelError::CtxFail)).into(),
+    }
+}
 
-    WalkDir::new(dir_path)
+#[command]
+pub async fn collect_pictures_from_disk(app: AppHandle<Wry>, path: String) -> IpcResponse<Vec<Picture>> {
+    let mut paths = Vec::<String>::new();
+
+    WalkDir::new(path)
         .into_iter()
         .filter_map(Result::ok) // TODO: handle entries that could not be read
         .for_each(|entry| {
@@ -92,23 +102,20 @@ pub async fn collect_picture_from_disk(app: AppHandle<Wry>, dir_path: String) ->
                 let extension = entry.path().extension().unwrap().to_str().unwrap();
 
                 if IMAGE_EXTENSIONS.contains(&extension) {
-                    data_urls
-                        .entry(file_path.clone())
-                        .or_insert(
-                            // read_file_as_data_url(file_path) // TODO: handle pictures that could not be read as data url
-                            read_file_as_data_url(file_path).unwrap()
-                        );
+                    if (!paths.contains(&file_path)) {
+                        paths.push(file_path);
+                    }
                 }
             }
         });
 
-    let data = data_urls.into_values().collect::<Vec<String>>();
+    let data = paths.into_values().collect::<Vec<String>>();
 
     let sql = "BEGIN; FOR $url IN $data { CREATE picture SET data_url = $url; }; SELECT * FROM picture; COMMIT;";
     let vars = vmap!("data".into() => data.into());
 
     match Ctx::from_app(app) {
-        Ok(ctx) => into_response(PictureBmc::custom_multi_query(ctx, sql, vars.into()).await),
+        Ok(ctx) => into_response(PictureBmc::custom_multi_query(ctx, sql, Some(vars.into())).await),
         Err(_) => Err(Error::Model(ModelError::CtxFail)).into(),
     }
 }

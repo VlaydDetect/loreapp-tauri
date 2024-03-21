@@ -4,6 +4,7 @@ mod response;
 mod picture;
 mod settings;
 mod tags_and_categories;
+mod documents_folder;
 
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -12,6 +13,7 @@ use crate::prelude::f;
 // --- re-exports
 pub use params::*;
 pub use document::*;
+pub use documents_folder::*;
 pub use response::*;
 pub use picture::*;
 pub use tags_and_categories::*;

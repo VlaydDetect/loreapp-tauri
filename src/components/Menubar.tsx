@@ -33,11 +33,11 @@ export default function Menubar({ editor }: IMenubarProps) {
 	]
 
 	return (
-		<div className="flex gap-2 p-[0_1rem] fixed z-10">
+		<div className="tw-flex tw-gap-2 tw-p-[0_1rem] tw-fixed tw-z-10">
 			{menus.map(group => (
-				<div className="flex gap-2">
+				<div className="tw-flex tw-gap-2">
 					{group.map(item => (
-						<button className="p-[0.5rem_0.75rem]" onClick={item.onClick}>
+						<button className="tw-p-[0.5rem_0.75rem]" onClick={item.onClick}>
 							<i className={`ri-${item.icon} ${item.isActive}`}></i>
 						</button>
 					))}

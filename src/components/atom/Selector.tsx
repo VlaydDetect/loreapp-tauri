@@ -1,5 +1,4 @@
 import React, {FC} from 'react';
-import PropTypes from 'prop-types';
 import { Row, Col, Select } from 'antd';
 
 const labelLayout = {
@@ -24,8 +23,8 @@ interface IProps {
 
 const Selector: FC<IProps> = ({ title, options, width = 80, size = 'middle', value, type, onChange }) => {
 	return (
-		<Row className="text-white/[.85] h-[3rem] leading-[3rem] mt-[0.6rem]">
-			<Col key="label" {...labelLayout} className="pr-2 text-right">{title}:</Col>
+		<Row className="tw-text-white/[.85] tw-h-[3rem] tw-leading-[3rem] tw-mt-[0.6rem]">
+			<Col key="label" {...labelLayout} className="tw-pr-2 tw-text-right">{title}:</Col>
 			<Col key="view" span={10}>
 				<Select style={{ width }} size={size} value={value} onChange={v => onChange(type, v)}>
 					{options.map(item => (

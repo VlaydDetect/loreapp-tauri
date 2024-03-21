@@ -1,20 +1,19 @@
-import React from "react";
-import ReactDOM from "react-dom/client";
-import App from "./App";
-import {DevSupport} from "@react-buddy/ide-toolbox";
-import {ComponentPreviews, useInitial} from "./dev";
-import Providers from "./context/Providers";
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { DevSupport } from '@react-buddy/ide-toolbox';
+import { RouterProvider } from '@tanstack/react-router';
+import router from './router';
 
-import "remixicon/fonts/remixicon.css"
+import { ComponentPreviews, useInitial } from './dev';
 
-import "./assets/styles.css";
+import 'remixicon/fonts/remixicon.css';
 
-ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
+import './assets/global.css';
+
+ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
     <React.StrictMode>
-            <DevSupport ComponentPreviews={ComponentPreviews} useInitialHook={useInitial}>
-                <Providers>
-                    <App/>
-                </Providers>
-            </DevSupport>
-    </React.StrictMode>
+        <DevSupport ComponentPreviews={ComponentPreviews} useInitialHook={useInitial}>
+            <RouterProvider router={router} />
+        </DevSupport>
+    </React.StrictMode>,
 );

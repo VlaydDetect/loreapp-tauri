@@ -1,32 +1,31 @@
-import {MutableRefObject, useEffect, useRef, useState} from "react";
+import {RefCallback, useCallback, useRef, useState} from "react";
 
-// https://youtu.be/ks8oftGP2oc?t=290
-export function useHover<T = undefined>(ref: MutableRefObject<T | undefined>) {
+export function useHover<T extends Element>(): [RefCallback<T>, boolean] {
     const [isHovering, setHovering] = useState(false)
+    const previousNode = useRef<T>();
 
-    const on = () => setHovering(true)
-    const off = () => setHovering(false)
+    const handleMouseEnter = useCallback(() => setHovering(true), []);
+    const handleMouseLeave = useCallback(() => setHovering(false), []);
 
-    useEffect(() => {
-        if (!ref.current) return
-        const node = ref.current
-
-        // @ts-ignore
-        node.addEventListener('mouseenter', on)
-        // @ts-ignore
-        node.addEventListener('mousemove', on)
-        // @ts-ignore
-        node.addEventListener('mouseleave', off)
-
-        return () => {
-            // @ts-ignore
-            node.removeEventListener('mouseenter', on)
-            // @ts-ignore
-            node.removeEventListener('mousemove', on)
-            // @ts-ignore
-            node.removeEventListener('mouseleave', off)
+    const ref = useCallback<(node: T) => void>((node) => {
+        if (previousNode.current?.nodeType === Node.ELEMENT_NODE) {
+            previousNode.current.removeEventListener(
+                "mouseenter",
+                handleMouseEnter
+            );
+            previousNode.current.removeEventListener(
+                "mouseleave",
+                handleMouseLeave
+            );
         }
-    }, [])
 
-    return isHovering
+        if (node?.nodeType === Node.ELEMENT_NODE) {
+            node.addEventListener("mouseenter", handleMouseEnter);
+            node.addEventListener("mouseleave", handleMouseLeave);
+        }
+
+        previousNode.current = node;
+    }, [handleMouseEnter, handleMouseLeave]);
+
+    return [ref, isHovering];
 }

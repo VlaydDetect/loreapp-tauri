@@ -1,36 +1,52 @@
-import {Tag, Category, CategoriesTree, createLabelValue, LabelValue, CategoryNode, isCategoryChild} from "@/interface";
-import { makeAutoObservable } from "mobx";
-import {catFmc, tagFmc} from "@/db";
+import { makeAutoObservable } from 'mobx';
+import {
+    CategoriesTree,
+    Category,
+    CategoryNode,
+    createLabelValue,
+    LabelValue,
+    Tag,
+} from '@/interface';
+import { catFmc, tagFmc } from '@/db';
 
 class TagsAndCategoriesStore {
     categories: Category[] = [];
-    categoriesTree: CategoriesTree = { nodes: [] };
+
     tags: Tag[] = [];
+
+    categoriesTree: CategoriesTree = { nodes: [] };
 
     constructor() {
         makeAutoObservable(this);
-    };
+    }
 
     //#region ------------------------ Categories ------------------------
     get categoriesAsOptions(): LabelValue[] {
-        return this.categories.map(c => createLabelValue(c.name))
+        return this.categories.map(c => createLabelValue(c.name));
     }
 
     setCategories = (categories: Category[]) => {
         this.categories = categories;
-    }
+    };
 
     setCategoriesTree = (categoriesTree: CategoriesTree) => {
         this.categoriesTree = categoriesTree;
-    }
+    };
 
     listCategories = () => {
-        catFmc.list().then(cat => this.setCategories(cat))
+        catFmc.list().then(cat => this.setCategories(cat));
     };
 
     listCategoriesTree = () => {
-        catFmc.listWithParent().then(tree => this.setCategoriesTree(tree))
-    }
+        catFmc.listCategoriesTree().then(tree => this.setCategoriesTree(tree));
+    };
+
+    createNewCategory = () => {
+        catFmc.createNewCategory().finally(() => {
+            this.listCategoriesTree();
+            this.listCategories();
+        });
+    };
 
     /**
      * Reattach category.
@@ -41,78 +57,92 @@ class TagsAndCategoriesStore {
      * @param toId id of the category to which the category is attached
      */
     reattachCategory = (id: string, fromId: string | undefined, toId: string | undefined) => {
-        console.log(`${id}, ${fromId}, ${toId}`)
-        catFmc.reattachSubcategory(id, fromId, toId).then(tree => this.setCategoriesTree(tree))
-    }
+        // console.log(`${id}, ${fromId}, ${toId}`)
+        catFmc.reattachSubcategory(id, fromId, toId).then(tree => this.setCategoriesTree(tree));
+    };
 
     createCategory = (name: string) => {
         catFmc.create({ name }).finally(() => {
             this.listCategoriesTree();
             this.listCategories();
         });
-    }
+    };
+
     createAndAttachCategory = (name: string, fromId: string) => {
         catFmc.create({ name }).then(newCategory => {
-            catFmc.attachSubcategory(fromId, newCategory.id)
+            catFmc
+                .attachSubcategory(fromId, newCategory.id)
                 .then(tree => this.setCategoriesTree(tree))
                 .finally(() => this.listCategories());
-        })
-    }
+        });
+    };
+
+    createAndAttachNewCategory = (fromId: string) => {
+        catFmc.createNewCategory().then(newCategory => {
+            catFmc
+                .attachSubcategory(fromId, newCategory.id)
+                .then(tree => this.setCategoriesTree(tree))
+                .finally(() => this.listCategories());
+        });
+    };
 
     renameCategory = (id: string, newName: string) => {
         catFmc.update(id, { name: newName }).finally(() => {
             this.listCategoriesTree();
             this.listCategories();
         });
-    }
+    };
 
     deleteCategory = (id: string) => {
         catFmc.delete(id).finally(() => {
             this.listCategoriesTree();
             this.listCategories();
         });
-    }
+    };
 
     findCategoryById = (id: string): CategoryNode | undefined => {
         if (this.categoriesTree.nodes.length === 0) return undefined;
 
-        let visited = this.categoriesTree.nodes.map(() => new Set<CategoryNode>());
+        const visited = this.categoriesTree.nodes.map(() => new Set<CategoryNode>());
         let stacks = this.categoriesTree.nodes.map(root => [root]);
 
         while (stacks.some(stack => stack.length)) {
             for (let i = 0; i < stacks.length; i++) {
-                let node = stacks[i].pop() as CategoryNode;
+                const node = stacks[i].pop() as CategoryNode;
 
                 if (node.id === id) return node;
                 visited[i].add(node);
 
+                // eslint-disable-next-line no-restricted-syntax
                 for (const child of node.children) {
                     if (!visited[i].has(child)) {
                         stacks[i].push(child);
                     }
                 }
             }
-            stacks = stacks.filter(stack => stack.length)
+            stacks = stacks.filter(stack => stack.length);
         }
 
         return undefined;
-    }
+    };
 
     findParent = (id: string): CategoryNode | undefined => {
         if (this.categoriesTree.nodes.length === 0) return undefined;
         const findInChildren = (node: CategoryNode): CategoryNode | undefined => {
             if (node.children.length === 0) return undefined;
 
+            // eslint-disable-next-line no-restricted-syntax
             for (const child of node.children) {
                 if (child.id === id) return child;
 
-                let parent = findInChildren(child);
+                const parent = findInChildren(child);
                 if (parent) return child;
             }
 
             return undefined;
-        }
+        };
 
+        // eslint-disable-next-line no-restricted-syntax
         for (const node of this.categoriesTree.nodes) {
             if (node.id === id) return undefined;
 
@@ -121,32 +151,30 @@ class TagsAndCategoriesStore {
         }
 
         return undefined;
-    }
+    };
 
-    isChild = (id: string): boolean => {
-        return !!this.findParent(id);
-    }
+    isChild = (id: string): boolean => !!this.findParent(id);
     //#endregion ------------------------ Categories ------------------------
 
     //#region ------------------------ Tags ------------------------
     get tagsAsOptions(): LabelValue[] {
-        return this.tags.map(t => createLabelValue(t.name))
+        return this.tags.map(t => createLabelValue(t.name));
     }
 
     setTags = (tags: Tag[]) => {
         this.tags = tags;
-    }
+    };
 
     listTags = () => {
-        tagFmc.list().then(tags => this.setTags(tags))
+        tagFmc.list().then(tags => this.setTags(tags));
     };
+    //#endregion ------------------------ Tags ------------------------
 
     listTagsAndCategories = () => {
         this.listCategories();
         this.listCategoriesTree();
         this.listTags();
-    }
-    //#endregion ------------------------ Tags ------------------------
+    };
 }
 
 const tagsAndCategoriesStore = new TagsAndCategoriesStore();

@@ -14,6 +14,7 @@ use std::sync::Arc;
 use surrealdb::sql::{Object, Value};
 use ts_rs::TS;
 use crate::model::ctx::Ctx;
+use crate::fs::read_file_as_data_url;
 
 #[skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, Default, TS, Clone)]
@@ -21,7 +22,7 @@ use crate::model::ctx::Ctx;
 pub struct Picture {
     pub id: String,
     pub ctime: String,
-    pub img_path: String,   // TODO: this can be either a DataURL or an absolute path to the file (under development)
+    pub path: String,   // TODO: this can be either a DataURL or an absolute path to the file (under development)
     pub title: Option<String>,
     pub desc: Option<String>,
     pub tags: Option<Vec<String>>,
@@ -34,7 +35,7 @@ impl TryFrom<Object> for Picture {
         let picture = Picture {
             id: val.x_take_val("id")?,
             ctime: val.x_take_val("ctime")?,
-            img_path: val.x_take_val("img_path")?,
+            path: val.x_take_val("path")?,
             title: val.x_take("title")?,
             desc: val.x_take("desc")?,
             tags: val.x_take("tags")?,
@@ -48,12 +49,18 @@ impl TryFrom<Object> for Picture {
 #[derive(Debug, Serialize, Deserialize, Default, TS)]
 #[ts(export, export_to = "../src/interface/")]
 pub struct PictureForCreate {
-    pub img_path: String
+    pub path: String,
+    pub name: Option<String>,
 }
 
 impl From<PictureForCreate> for Value {
     fn from(val: PictureForCreate) -> Self {
-        let mut data = vmap!["img_path".into() => val.img_path.into()];
+        let mut data = vmap!["path".into() => val.path.into()];
+
+        if let Some(name) = val.name {
+            data.insert("name".into(), name.into());
+        }
+
         Value::Object(data.into())
     }
 }
@@ -132,19 +139,39 @@ impl PictureBmc {
         bmc_list::<Picture, _>(ctx, Self::ENTITY, filter, list_options).await
     }
 
+    pub async fn get_with_url(ctx: Arc<Ctx>, id: &str) -> Result<Picture> {
+        let pic = Self::get(ctx, id).await?;
+        let data_url = read_file_as_data_url(pic.path)?;
+
+        Ok(Picture {
+            path: data_url,
+            ..pic
+        })
+    }
+
+    pub async fn list_with_urls(ctx: Arc<Ctx>, filter: Option<Vec<PictureFilter>>, list_options: Option<ListOptions>) -> Result<Vec<Picture>> {
+        let mut pics = Self::list(ctx, filter, list_options).await?;
+
+        for pic in &mut pics {
+            pic.path = read_file_as_data_url(&pic.path)?;
+        }
+
+        Ok(pics)
+    }
+
     pub async fn get_document_used_in(ctx: Arc<Ctx>, id: &str) -> Result<Vec<String>> {
         let sql = "SELECT id FROM type::table($tb) WHERE $id IN used_pics;";
         let vars = vmap!["tb".into() => "document".into(), "id".into() => id.into()];
-        let result = bmc_custom_solo_query::<ModelMutateResultData>(ctx, Self::ENTITY, sql, vars.into()).await?;
+        let result = bmc_custom_solo_query::<ModelMutateResultData>(ctx, Self::ENTITY, sql, Some(vars.into())).await?;
 
         Ok(result.into_iter().map(|v| v.id).collect())
     }
 
-    pub async fn custom_solo_query(ctx: Arc<Ctx>, sql: &str, vars: Object) -> Result<Vec<Picture>> {
+    pub async fn custom_solo_query(ctx: Arc<Ctx>, sql: &str, vars: Option<Object>) -> Result<Vec<Picture>> {
         bmc_custom_solo_query::<Picture>(ctx, Self::ENTITY, sql, vars).await
     }
 
-    pub async fn custom_multi_query(ctx: Arc<Ctx>, sqls: &str, vars: Object) -> Result<Vec<Picture>> {
+    pub async fn custom_multi_query(ctx: Arc<Ctx>, sqls: &str, vars: Option<Object>) -> Result<Vec<Picture>> {
         bmc_custom_multi_query::<Picture>(ctx, Self::ENTITY, sqls, vars).await
     }
 }

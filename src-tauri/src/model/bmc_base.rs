@@ -63,32 +63,25 @@ pub(super) async fn bmc_list<E, F>(ctx: Arc<Ctx>, entity: &'static str, filter: 
         E: TryFrom<Object, Error = Error>,
         F: Into<FilterGroups> + Debug,
 {
-    // query for the Surreal Objects
-    // let objects = ctx.get_model_manager().store().exec_select(entity, filter.map(|f| f.filter_nodes(None)), opts).await?;
     let objects = ctx.get_model_manager().store().exec_select(entity, filter, opts).await?;
 
-    // then get the entities
     objects.into_iter().map(|o| o.try_into()).collect::<Result<_>>()
 }
 
-pub(super) async fn bmc_custom_solo_query<E>(ctx: Arc<Ctx>, _entity: &'static str, sql: &str, vars: Object) -> Result<Vec<E>>
+pub(super) async fn bmc_custom_solo_query<E>(ctx: Arc<Ctx>, _entity: &'static str, sql: &str, vars: Option<Object>) -> Result<Vec<E>>
     where E: TryFrom<Object, Error = Error>,
 {
-    // query for the Surreal Objects
-    // let objects = ctx.get_model_manager().store().exec_select(entity, filter.map(|f| f.filter_nodes(None)), opts).await?;
     let objects = ctx.get_model_manager().store().exec_custom_solo_query(sql, vars).await?;
 
-    // then get the entities
     objects.into_iter().map(|o| o.try_into()).collect::<Result<_>>()
 }
 
-pub(super) async fn bmc_custom_multi_query<E>(ctx: Arc<Ctx>, _entity: &'static str, sqls: &str, vars: Object) -> Result<Vec<E>>
+pub(super) async fn bmc_custom_multi_query<E>(ctx: Arc<Ctx>, _entity: &'static str, sqls: &str, vars: Option<Object>) -> Result<Vec<E>>
     where E: TryFrom<Object, Error = Error>,
 {
     let to_take = surreal_qb::analyze_query(sqls).map_err(|ex| Error::QB(ex.into()))?;
-    // query for the Surreal Objects
+
     let objects = ctx.get_model_manager().store().exec_custom_multi_query(sqls, vars, to_take).await?;
 
-    // then get the entities
     objects.into_iter().map(|o| o.try_into()).collect::<Result<_>>()
 }

@@ -14,17 +14,17 @@ tauri-build = { version = "1.5", features = [] }
 
 [dependencies]
 # TAURI
-tauri = { version = "1.5", features = [ "protocol-all", "fs-all", "shell-all", "os-all", "window-all", "dialog-all", "path-all", "notification-all", "system-tray", "icon-ico", "icon-png"] }
+tauri = { version = "1.5", features = ["window-set-fullscreen", "window-hide", "window-set-icon", "window-maximize", "window-minimize", "window-set-cursor-position", "window-set-always-on-top", "window-set-focus", "window-start-dragging", "window-set-size", "window-center", "window-set-cursor-icon", "window-show", "window-unminimize", "window-close", "window-unmaximize", "window-set-resizable", "window-set-title", "window-set-min-size", "protocol-all", "fs-all", "shell-all", "os-all", "dialog-all", "path-all", "notification-all", "system-tray", "icon-ico", "icon-png"] }
 tauri-plugin-single-instance = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
 tauri-plugin-fs-extra = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
 tauri-plugin-fs-watch = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
 tauri-plugin-store = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
 tauri-plugin-window-state = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
+window-state-manager-plugin = { path = "src/tauri_plugins/window-state-manager-plugin" }
 #
 
 # DB
-#surrealdb = {version = "1.1.0", default-features=false, features = ['kv-rocksdb'] }
-surrealdb = {git = "https://github.com/surrealdb/surrealdb.git", branch = "main", default-features = false, features = ['kv-rocksdb'] }
+surrealdb = { git = "https://github.com/surrealdb/surrealdb.git", branch = "main", default-features = false, features = ['kv-rocksdb'] }
 surreal-qb = { path = "surreal-qb" }
 surreal_macros = { path = "./src/macros/surreal_macros" }
 #

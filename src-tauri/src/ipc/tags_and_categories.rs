@@ -56,6 +56,14 @@ pub async fn list_categories(app: AppHandle<Wry>, filter: Option<Value>) -> IpcR
 }
 
 #[command]
+pub async fn create_new_category(app: AppHandle<Wry>) -> IpcResponse<Category> {
+    match Ctx::from_app(app) {
+        Ok(ctx) => into_response(CategoryBmc::create_new_category(ctx).await),
+        Err(_) => Err(Error::Model(ModelError::CtxFail)).into(),
+    }
+}
+
+#[command]
 pub async fn attach_subcategory(app: AppHandle<Wry>, id: String, sub_id: String) -> IpcResponse<CategoriesTree> {
     match Ctx::from_app(app) {
         Ok(ctx) => into_response(CategoryBmc::attach_subcategory(ctx, id.as_str(), sub_id.as_str()).await),
@@ -84,9 +92,9 @@ pub async fn reattach_subcategory(app: AppHandle<Wry>, id: String, from_id: Opti
 }
 
 #[command]
-pub async fn list_with_parent(app: AppHandle<Wry>) -> IpcResponse<CategoriesTree> {
+pub async fn list_categories_tree(app: AppHandle<Wry>) -> IpcResponse<CategoriesTree> {
     match Ctx::from_app(app) {
-        Ok(ctx) => into_response(CategoryBmc::list_with_parent(ctx).await),
+        Ok(ctx) => into_response(CategoryBmc::list_tree(ctx).await),
         Err(_) => Err(Error::Model(ModelError::CtxFail)).into(),
     }
 }

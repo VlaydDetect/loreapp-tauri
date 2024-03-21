@@ -6,10 +6,11 @@ pub type Result<T> = core::result::Result<T, Error>;
 pub enum Error {
     #[error("{0}")]
     FailToCreateDb(String),
-    // #[error("{0}")]
-    // FailToExecuteQuery(String),
+
     #[error("{0}")]
     UnresolvableResponse(&'static str),
+    #[error("Response is empty")]
+    ResponseIsEmpty,
     #[error("{0}")]
     Surreal(#[from] surrealdb::Error),
 

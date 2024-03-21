@@ -1,6 +1,6 @@
 import React from 'react';
-import {classNames} from './utils';
-import {ObjectUtils} from './object-utils';
+import { classNames } from './utils';
+import { ObjectUtils } from './object-utils';
 
 /**
  * Icon options passed to any icon.
@@ -23,23 +23,29 @@ export type IconOptions<ComponentProps, AdditionalProps> = AdditionalProps & {
     [key: string]: any;
 };
 
-export type IconType<ComponentProps, AdditionalProps = NonNullable<unknown>> = React.ReactNode | ((options: IconOptions<ComponentProps, AdditionalProps>) => React.ReactNode);
+export type IconType<ComponentProps, AdditionalProps = NonNullable<unknown>> =
+    | React.ReactNode
+    | ((options: IconOptions<ComponentProps, AdditionalProps>) => React.ReactNode);
 
 export class IconUtils {
-    static getJSXIcon(icon: IconType<any>, iconProps: React.HTMLProps<HTMLElement> = {}, options: any = {}): any {
+    static getJSXIcon(
+        icon: IconType<any>,
+        iconProps: React.HTMLProps<HTMLElement> = {},
+        options: any = {},
+    ): any {
         let content = null;
 
         if (icon !== null) {
             const iconType = typeof icon;
             const className = classNames(iconProps.className, iconType === 'string' && icon);
 
-            content = <span {...iconProps} className={className}></span>;
+            content = <span {...iconProps} className={className} />;
 
             if (iconType !== 'string') {
                 const defaultContentOptions = {
-                    iconProps: iconProps,
+                    iconProps,
                     element: content,
-                    ...options
+                    ...options,
                 };
 
                 return ObjectUtils.getJSXElement(icon, defaultContentOptions);

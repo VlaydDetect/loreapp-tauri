@@ -1,19 +1,20 @@
 import {defineConfig} from "vite";
 import {fileURLToPath, URL} from "url";
 import react from "@vitejs/plugin-react";
+import { TanStackRouterVite } from '@tanstack/router-vite-plugin'
 
 // https://vitejs.dev/config/
 /** @type {import('vite').UserConfig} */
 export default defineConfig(async () => {
     return {
-        plugins: [react()],
+        plugins: [react(), TanStackRouterVite()],
 
         resolve: {
             alias: [
                 {
                     find: '@',
                     replacement: fileURLToPath(new URL('./src', import.meta.url))
-                }
+                },
             ]
         },
 

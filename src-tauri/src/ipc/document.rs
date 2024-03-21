@@ -1,7 +1,7 @@
 use serde_json::Value;
 use surreal_qb::filter::ListOptions;
 use super::{CreateParams, DeleteParams, GetParams, into_response, IpcResponse, ListParams, UpdateParams};
-use crate::model::{Document, DocumentBmc, DocumentForCreate, DocumentForUpdate};
+use crate::model::{Document, DocumentBmc, DocumentForCreate, DocumentForUpdate, DocumentsFolderBmc, DocumentsFolderTree};
 use crate::Error;
 use crate::model::Error as ModelError;
 use tauri::{command, AppHandle, Wry};
@@ -50,6 +50,14 @@ pub async fn list_documents(app: AppHandle<Wry>, filter: Option<Value>, list_opt
                 Err(err) => Err(Error::JsonSerde(err)).into(),
             }
         },
+        Err(_) => Err(Error::Model(ModelError::CtxFail)).into(),
+    }
+}
+
+#[command]
+pub async fn create_untitled_document(app: AppHandle<Wry>) -> IpcResponse<Document> {
+    match Ctx::from_app(app) {
+        Ok(ctx) => into_response(DocumentBmc::create_untitled(ctx).await),
         Err(_) => Err(Error::Model(ModelError::CtxFail)).into(),
     }
 }
