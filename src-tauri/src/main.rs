@@ -10,6 +10,25 @@ windows_subsystem = "windows"
 // -- Sub-Modules
 #[macro_use]
 extern crate simple_log;
+
+use std::ops::{Not, Sub};
+use std::sync::Arc;
+
+use serde::Serialize;
+// Manager is used by .get_window
+use tauri::{self, Manager};
+use tauri_plugin_store;
+use tauri_plugin_window_state;
+use ts_rs::TS;
+
+// -- Re-Exports
+pub use error::{Error, Result};
+pub use settings::AppSettings;
+use tauri_plugins::window_state_manager_plugin::{AppHandleExt, Builder as WindowPluginBuilder, StateFlags};
+
+use crate::context::ApplicationContext;
+use crate::tray::{create_tray, create_tray_event, setup_tray_state};
+
 mod logger;
 mod event;
 mod error;
@@ -23,28 +42,7 @@ mod prelude;
 mod utils;
 mod context;
 mod tray;
-
-use std::sync::Arc;
-// -- Re-Exports
-pub use error::{Error, Result};
-pub use settings::AppSettings;
-
-use serde::Serialize;
-use ts_rs::TS;
-use tauri_plugin_store;
-use tauri_plugin_window_state;
-use model::seed_store_for_dev;
-
-// Manager is used by .get_window
-use tauri::{self, Manager};
-
-use crate::context::ApplicationContext;
-use crate::tray::{create_tray, create_tray_event, setup_tray_state};
-
-use serde_json::json;
-use surreal_qb::filter::ListOptions;
-use crate::model::PictureFilter;
-
+mod tauri_plugins;
 
 #[derive(TS, Clone, Serialize)]
 #[ts(export, rename_all="camelCase", export_to = "../src/interface/")]
@@ -61,6 +59,8 @@ async fn main() -> Result<()> {
 	let app_context = Arc::new(ApplicationContext::new().await);
 
 	let system_tray_en = create_tray("en", "main-tray");
+
+	let mut window_state_plugin_builder = WindowPluginBuilder::new().with_state_flags(!StateFlags::DECORATIONS);
 
 	tauri::Builder::default()
 		.system_tray(system_tray_en)
@@ -83,31 +83,43 @@ async fn main() -> Result<()> {
 			ipc::update_document,
 			ipc::delete_document,
 			ipc::list_documents,
+			ipc::create_untitled_document,
+			// Documents Folder
+			ipc::get_documents_folder,
+			ipc::create_documents_folder,
+			ipc::update_documents_folder,
+			ipc::delete_documents_folder,
+			ipc::list_documents_folders,
+			ipc::create_unnamed_folder,
+			ipc::add_folder_or_document,
+			ipc::remove_folder_or_document,
+			ipc::move_folder_or_document,
+			ipc::list_folders_tree,
 			// Pictures
 			ipc::get_picture,
 			ipc::create_picture,
 			ipc::update_picture,
 			ipc::delete_picture,
 			ipc::list_pictures,
-			ipc::add_picture_from_disk,
-			ipc::collect_picture_from_disk,
+			ipc::get_picture_with_url,
+			ipc::list_pictures_with_urls,
+			ipc::collect_pictures_from_disk,
 			// Tags & Categories
 			ipc::get_category,
 			ipc::create_category,
 			ipc::update_category,
 			ipc::delete_category,
 			ipc::list_categories,
+			ipc::create_new_category,
 			ipc::attach_subcategory,
 			ipc::detach_subcategory,
 			ipc::reattach_subcategory,
-			ipc::list_with_parent,
+			ipc::list_categories_tree,
 			ipc::get_tag,
 			ipc::create_tag,
 			ipc::update_tag,
 			ipc::delete_tag,
 			ipc::list_tags,
-			// Utils (not used in front-end)
-			// model::process_pictures,
 		])
 		// allow only one instance and propagate args and cwd to existing instance
 		.plugin(tauri_plugin_single_instance::init(|app, args, cwd| {
@@ -121,7 +133,7 @@ async fn main() -> Result<()> {
 		// save window position and size between sessions
 		// if you remove this, make sure to uncomment the show_main_window code
 		//  in this file and TauriProvider.jsx
-		.plugin(tauri_plugin_window_state::Builder::default().build())
+		.plugin(window_state_plugin_builder.build())
 		// custom setup code
 		.setup(|app| setup_tray_state(app))
 		.manage(app_context)

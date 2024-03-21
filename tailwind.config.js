@@ -1,12 +1,57 @@
 /** @type {import('tailwindcss').Config} */
-export default {
-    content: ['./index.html', './src/**/*.{js,jsx,ts,tsx}'],
+module.exports = {
+    darkMode: ["class"],
     mode: "jit",
-    darkMode: 'class',
+    content: [
+        './index.html',
+        './pages/**/*.{ts,tsx}',
+        './components/**/*.{ts,tsx}',
+        './src/**/*.{ts,tsx}',
+    ],
+    prefix: "tw-",
     theme: {
+        container: {
+            center: true,
+            padding: "2rem",
+            screens: {
+                "2xl": "1400px",
+            },
+        },
         extend: {
             colors: {
-                primary: "#00040f",
+                border: "hsl(var(--border))",
+                input: "hsl(var(--input))",
+                ring: "hsl(var(--ring))",
+                background: "hsl(var(--background))",
+                foreground: "hsl(var(--foreground))",
+                primary: {
+                    DEFAULT: "hsl(var(--primary))",
+                    foreground: "hsl(var(--primary-foreground))",
+                },
+                secondary: {
+                    DEFAULT: "hsl(var(--secondary))",
+                    foreground: "hsl(var(--secondary-foreground))",
+                },
+                destructive: {
+                    DEFAULT: "hsl(var(--destructive))",
+                    foreground: "hsl(var(--destructive-foreground))",
+                },
+                muted: {
+                    DEFAULT: "hsl(var(--muted))",
+                    foreground: "hsl(var(--muted-foreground))",
+                },
+                accent: {
+                    DEFAULT: "hsl(var(--accent))",
+                    foreground: "hsl(var(--accent-foreground))",
+                },
+                popover: {
+                    DEFAULT: "hsl(var(--popover))",
+                    foreground: "hsl(var(--popover-foreground))",
+                },
+                card: {
+                    DEFAULT: "hsl(var(--card))",
+                    foreground: "hsl(var(--card-foreground))",
+                },
                 purple: '#3F3CBB',
                 midnight: '#121063',
                 metal: '#565584',
@@ -17,7 +62,11 @@ export default {
                 'tahiti-blue': '#3AB7BF',
                 'cool-white': '#ECEBFF',
                 'bubble-gum': '#FF77E9',
-                'copper-rust': '#78DCCA'
+                'copper-rust': '#78DCCA',
+                'rough-grey': '#1e1e1e',
+                'light-gray': '#363636',
+                'white-gray': '#b3b3b3',
+                'brown-grey': '#262626',
             },
             backgroundColor: {
                 blackOverlay: 'rgba(0, 0 ,0 ,0.7)',
@@ -32,16 +81,22 @@ export default {
                 inter: ["Inter", "sans-serif"],
                 'family-inherit': 'inherit',
             },
+            borderRadius: {
+                lg: "var(--radius)",
+                md: "calc(var(--radius) - 2px)",
+                sm: "calc(var(--radius) - 4px)",
+            },
             fontSize: {
-                'mini': ['12px', { lineHeight: '20px', letterSpacing: '0.05em' }],
-                xs: ['14px', { lineHeight: '24px', letterSpacing: '-0.03em' }],
-                sm: ['16px', { lineHeight: '28px', letterSpacing: '-0.03em' }],
-                lg: ['18px', { lineHeight: '28px', letterSpacing: '-0.03em' }],
-                xl: ['24px', { lineHeight: '36px', letterSpacing: '-0.03em' }],
-                '2xl': ['36px', { lineHeight: '48px', letterSpacing: '-0.032em' }],
-                '3xl': ['48px', { lineHeight: '56px', letterSpacing: '-0.032em' }],
-                '4xl': ['56px', { lineHeight: '64px', letterSpacing: '-0.032em' }],
-                '5xl': ['80px', { lineHeight: '80px', letterSpacing: '-0.032em' }],
+                'tooltip': ['12px', {lineHeight: '3px', letterSpacing: '-0.01rem', fontWeight: 'bold'}],
+                'mini': ['12px', {lineHeight: '20px', letterSpacing: '0.05em'}],
+                xs: ['14px', {lineHeight: '24px', letterSpacing: '-0.03em'}],
+                sm: ['16px', {lineHeight: '28px', letterSpacing: '-0.03em'}],
+                lg: ['18px', {lineHeight: '28px', letterSpacing: '-0.03em'}],
+                xl: ['24px', {lineHeight: '36px', letterSpacing: '-0.03em'}],
+                '2xl': ['36px', {lineHeight: '48px', letterSpacing: '-0.032em'}],
+                '3xl': ['48px', {lineHeight: '56px', letterSpacing: '-0.032em'}],
+                '4xl': ['56px', {lineHeight: '64px', letterSpacing: '-0.032em'}],
+                '5xl': ['80px', {lineHeight: '80px', letterSpacing: '-0.032em'}],
                 'size-inherit': 'inherit'
             },
             gridTemplateColumns: {
@@ -75,20 +130,23 @@ export default {
                         transform: 'translateZ(160px)',
                     },
                 },
+                "accordion-down": {
+                    from: {height: "0"},
+                    to: {height: "var(--radix-accordion-content-height)"},
+                },
+                "accordion-up": {
+                    from: {height: "var(--radix-accordion-content-height)"},
+                    to: {height: "0"},
+                },
             },
             animation: {
                 'slide-in': 'slide-in 0.5s ease-out',
                 'slide-fwd': ' slide-fwd 0.45s cubic-bezier(0.250, 0.460, 0.450, 0.940) both',
+                "accordion-down": "accordion-down 0.2s ease-out",
+                "accordion-up": "accordion-up 0.2s ease-out",
             },
         },
         screens: {
-            xs: "480px",
-            ss: "620px",
-            sm: "768px",
-            md: "1060px",
-            lg: "1200px",
-            xl: "1700px",
-
             'xs-max': {'max': '480px'},
             'sm-max': {'max': '768px'},
             'lg-max': {'max': '1200px'},
@@ -130,6 +188,7 @@ export default {
     },
     plugins: [
         require('@gradin/tailwindcss-scrollbar'),
+        require('tailwind-scrollbar-hide'),
+        require("tailwindcss-animate"),
     ],
 }
-

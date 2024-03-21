@@ -21,10 +21,10 @@ export default function DirectoryEntity({ idx, name, path, type, onDoubleClick }
     const unselectDirectoryContents = useContentsStore(state => state.unselectDirectoryContents)
 
     return (
-        <div title={name} className="overflow-ellipsis whitespace-nowrap overflow-hidden">
+        <div title={name} className="tw-overflow-ellipsis tw-whitespace-nowrap tw-overflow-hidden">
             <button
                 id={DIRECTORY_ENTITY_ID}
-                className={`directory-entity bg-background hover:bg-bright cursor-pointer w-full h-7 flex ${currentSelectedIdx === idx ? "bg-bright" : "" }`}
+                className={`tw-directory-entity tw-bg-background hover:tw-bg-bright tw-cursor-pointer tw-w-full tw-h-7 tw-flex ${currentSelectedIdx === idx ? "tw-bg-bright" : "" }`}
                 onDoubleClick={(e) => {
                     onDoubleClick(e);
                     unselectDirectoryContents();
@@ -32,7 +32,7 @@ export default function DirectoryEntity({ idx, name, path, type, onDoubleClick }
                 onClick={() => selectContentIdx(idx)}
                 ref={buttonRef}
             >
-                <div className={`mr-1 ml-1 ${type == "File" ? "text-gray-500" : "text-[#FFD54F]"}`}>
+                <div className={`tw-mr-1 tw-ml-1 ${type == "File" ? "tw-text-gray-500" : "tw-text-[#FFD54F]"}`}>
                     {type === "File" ? (
                         <AiFillFile/>
                     ) : (

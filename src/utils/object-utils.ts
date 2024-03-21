@@ -1,7 +1,10 @@
 export class ObjectUtils {
     static equals(obj1: any, obj2: any, field: string): boolean {
         if (field && obj1 && typeof obj1 === 'object' && obj2 && typeof obj2 === 'object') {
-            return this.deepEquals(this.resolveFieldData(obj1, field), this.resolveFieldData(obj2, field));
+            return this.deepEquals(
+                this.resolveFieldData(obj1, field),
+                this.resolveFieldData(obj2, field),
+            );
         }
 
         return this.deepEquals(obj1, obj2);
@@ -16,12 +19,11 @@ export class ObjectUtils {
     static deepEquals(a: any, b: any): boolean {
         if (a === b) return true;
 
-        if (a && b && typeof a == 'object' && typeof b == 'object') {
-            let arrA = Array.isArray(a),
-                arrB = Array.isArray(b),
-                i,
-                length,
-                key;
+        if (a && b && typeof a === 'object' && typeof b === 'object') {
+            const arrA = Array.isArray(a);
+            const arrB = Array.isArray(b);
+
+            let i, length, key;
 
             if (arrA && arrB) {
                 length = a.length;
@@ -33,25 +35,26 @@ export class ObjectUtils {
 
             if (arrA !== arrB) return false;
 
-            let dateA = a instanceof Date,
-                dateB = b instanceof Date;
+            const dateA = a instanceof Date;
+            const dateB = b instanceof Date;
 
             if (dateA !== dateB) return false;
             if (dateA && dateB) return a.getTime() === b.getTime();
 
-            let regexpA = a instanceof RegExp,
-                regexpB = b instanceof RegExp;
+            const regexpA = a instanceof RegExp;
+            const regexpB = b instanceof RegExp;
 
             if (regexpA !== regexpB) return false;
             if (regexpA && regexpB) return a.toString() === b.toString();
 
-            let keys = Object.keys(a);
+            const keys = Object.keys(a);
 
             length = keys.length;
 
             if (length !== Object.keys(b).length) return false;
 
-            for (i = length; i-- !== 0; ) if (!Object.prototype.hasOwnProperty.call(b, keys[i])) return false;
+            for (i = length; i-- !== 0; )
+                if (!Object.prototype.hasOwnProperty.call(b, keys[i])) return false;
 
             for (i = length; i-- !== 0; ) {
                 key = keys[i];
@@ -61,7 +64,7 @@ export class ObjectUtils {
             return true;
         }
 
-        /*eslint no-self-compare: "off"*/
+        // eslint-disable-next-line no-self-compare
         return a !== a && b !== b;
     }
 
@@ -84,22 +87,24 @@ export class ObjectUtils {
         if (Object.keys(data).length) {
             if (this.isNotEmpty(data[field])) {
                 return data[field];
-            } else if (field.indexOf('.') === -1) {
+            }
+            if (field.indexOf('.') === -1) {
                 return data[field];
-            } else {
-                let fields = field.split('.');
-                let value = data;
+            }
 
-                for (const field of fields) {
-                    if (value === null) {
-                        return null;
-                    }
+            const fields = field.split('.');
+            let value = data;
 
-                    value = value[field];
+            // eslint-disable-next-line no-restricted-syntax
+            for (const iField of fields) {
+                if (value === null) {
+                    return null;
                 }
 
-                return value;
+                value = value[iField];
             }
+
+            return value;
         }
 
         return null;
@@ -111,7 +116,7 @@ export class ObjectUtils {
         }
 
         return Object.keys(obj1)
-            .filter((key) => !obj2.hasOwnProperty(key))
+            .filter(key => !Object.prototype.hasOwnProperty.call(obj2, key))
             .reduce((result, current) => {
                 // @ts-ignore
                 result[current] = obj1[current];
@@ -135,8 +140,8 @@ export class ObjectUtils {
         }
 
         Object.keys(obj)
-            .filter((key) => startsWiths.some((value) => key.startsWith(value)))
-            .forEach(function (key) {
+            .filter(key => startsWiths.some(value => key.startsWith(value)))
+            .forEach(key => {
                 // @ts-ignore
                 result[key] = obj[key];
                 delete obj[key];
@@ -158,7 +163,9 @@ export class ObjectUtils {
 
     static findIndexInList(value: any, list: any[], dataKey?: string): number {
         if (list) {
-            return dataKey ? list.findIndex((item) => this.equals(item, value, dataKey)) : list.findIndex((item) => item === value);
+            return dataKey
+                ? list.findIndex(item => this.equals(item, value, dataKey))
+                : list.findIndex(item => item === value);
         }
 
         return -1;
@@ -181,14 +188,19 @@ export class ObjectUtils {
     static getPropCaseInsensitive<O extends Object>(props: O, prop: keyof O, defaultProps: O): any {
         const fkey = this.toFlatCase(prop as string);
 
-        for (let key in props) {
-            if (props.hasOwnProperty(key) && this.toFlatCase(key) === fkey) {
+        // eslint-disable-next-line no-restricted-syntax
+        for (const key in props) {
+            if (Object.prototype.hasOwnProperty.call(props, key) && this.toFlatCase(key) === fkey) {
                 return props[key];
             }
         }
 
-        for (let key in defaultProps) {
-            if (defaultProps.hasOwnProperty(key) && this.toFlatCase(key) === fkey) {
+        // eslint-disable-next-line no-restricted-syntax
+        for (const key in defaultProps) {
+            if (
+                Object.prototype.hasOwnProperty.call(defaultProps, key) &&
+                this.toFlatCase(key) === fkey
+            ) {
                 return defaultProps[key];
             }
         }
@@ -197,7 +209,8 @@ export class ObjectUtils {
     }
 
     static getMergedProps(props: object, defaultProps: object): object {
-        return Object.assign({}, defaultProps, props);
+        // return Object.assign({}, defaultProps, props);
+        return { ...defaultProps, ...props };
     }
 
     static getDiffProps(props: object, defaultProps: object): object {
@@ -209,21 +222,29 @@ export class ObjectUtils {
     }
 
     static getComponentProp(component: any, prop: string = '', defaultProps: object = {}): any {
-        return this.isNotEmpty(component) ? this.getProp(component.props, prop, defaultProps) : undefined;
+        return this.isNotEmpty(component)
+            ? this.getProp(component.props, prop, defaultProps)
+            : undefined;
     }
 
     static getComponentProps(component: any, defaultProps: object = {}): object | undefined {
-        return this.isNotEmpty(component) ? this.getMergedProps(component.props, defaultProps) : undefined;
+        return this.isNotEmpty(component)
+            ? this.getMergedProps(component.props, defaultProps)
+            : undefined;
     }
 
     static getComponentDiffProps(component: any, defaultProps: object = {}): object | undefined {
-        return this.isNotEmpty(component) ? this.getDiffProps(component.props, defaultProps) : undefined;
+        return this.isNotEmpty(component)
+            ? this.getDiffProps(component.props, defaultProps)
+            : undefined;
     }
 
     static isValidChild(child: any, type: string, validTypes?: any[]): boolean {
         /* eslint-disable */
         if (child) {
-            let childType = this.getComponentProp(child, '__TYPE') || (child.type ? child.type.displayName : undefined);
+            let childType =
+                this.getComponentProp(child, '__TYPE') ||
+                (child.type ? child.type.displayName : undefined);
 
             // for App Router in Next.js ^14,
             if (!childType && child?.type?._payload?.value) {
@@ -240,9 +261,9 @@ export class ObjectUtils {
                     const messageTypes = validTypes ? validTypes : [type];
 
                     console.error(
-                        `PrimeReact: Unexpected type; '${childType}'. Parent component expects a ${messageTypes.map((t) => `${t}`).join(' or ')} component or a component with the ${messageTypes
-                            .map((t) => `__TYPE="${t}"`)
-                            .join(' or ')} property as a child component.`
+                        `PrimeReact: Unexpected type; '${childType}'. Parent component expects a ${messageTypes.map(t => `${t}`).join(' or ')} component or a component with the ${messageTypes
+                            .map(t => `__TYPE="${t}"`)
+                            .join(' or ')} property as a child component.`,
                     );
                     return false;
                 }
@@ -259,7 +280,9 @@ export class ObjectUtils {
 
     static getRefElement(ref: any): any {
         if (ref) {
-            return typeof ref === 'object' && ref.hasOwnProperty('current') ? ref.current : ref;
+            return typeof ref === 'object' && Object.prototype.hasOwnProperty.call(ref, 'current')
+                ? ref.current
+                : ref;
         }
 
         return null;
@@ -306,11 +329,15 @@ export class ObjectUtils {
 
     static toFlatCase(str: string): string {
         // convert snake, kebab, camel and pascal cases to flat case
-        return this.isNotEmpty(str) && this.isString(str) ? str.replace(/([-_])/g, '').toLowerCase() : str;
+        return this.isNotEmpty(str) && this.isString(str)
+            ? str.replace(/([-_])/g, '').toLowerCase()
+            : str;
     }
 
     static toCapitalCase(str: string): string {
-        return this.isNotEmpty(str) && this.isString(str) ? str[0].toUpperCase() + str.slice(1) : str;
+        return this.isNotEmpty(str) && this.isString(str)
+            ? str[0].toUpperCase() + str.slice(1)
+            : str;
     }
 
     static trim(value: any): any {
@@ -319,7 +346,15 @@ export class ObjectUtils {
     }
 
     static isEmpty(value: any): boolean {
-        return value === null || value === undefined || value === '' || (Array.isArray(value) && value.length === 0) || (!(value instanceof Date) && typeof value === 'object' && Object.keys(value).length === 0);
+        return (
+            value === null ||
+            value === undefined ||
+            value === '' ||
+            (Array.isArray(value) && value.length === 0) ||
+            (!(value instanceof Date) &&
+                typeof value === 'object' &&
+                Object.keys(value).length === 0)
+        );
     }
 
     static isNotEmpty(value: any): boolean {
@@ -327,7 +362,10 @@ export class ObjectUtils {
     }
 
     static isFunction(value: any): boolean {
-        return !!(value && value.constructor && value.call && value.apply) && typeof value === 'function';
+        return (
+            !!(value && value.constructor && value.call && value.apply) &&
+            typeof value === 'function'
+        );
     }
 
     static isObject(value: any): boolean {
@@ -390,7 +428,7 @@ export class ObjectUtils {
         return index;
     }
 
-    static sort(value1: any, value2: any, order = 1, comparator: any, nullSortOrder = 1) {
+    static sort(value1: any, value2: any, comparator: any, order = 1, nullSortOrder = 1) {
         const result = this.compare(value1, value2, comparator, order);
         let finalSortOrder = order;
 
@@ -410,31 +448,48 @@ export class ObjectUtils {
         if (emptyValue1 && emptyValue2) result = 0;
         else if (emptyValue1) result = order;
         else if (emptyValue2) result = -order;
-        else if (typeof value1 === 'string' && typeof value2 === 'string') result = comparator(value1, value2);
+        else if (typeof value1 === 'string' && typeof value2 === 'string')
+            result = comparator(value1, value2);
         else result = value1 < value2 ? -1 : value1 > value2 ? 1 : 0;
 
         return result;
     }
 
     static localeComparator(locale: string | string[]) {
-        //performance gain using Int.Collator. It is not recommended to use localeCompare against large arrays.
+        // performance gain using Int.Collator. It is not recommended to use localeCompare against large arrays.
         return new Intl.Collator(locale, { numeric: true }).compare;
     }
 
-    static findChildrenByKey(data: { key: any, children: any[] }[], key: any): any | any[] {
-        for (const item of data) {
+    static findChildrenByKey(data: { key: any; children: any[] }[], key: any): any | any[] {
+        // for (const item of data) {
+        //     if (item.key === key) {
+        //         return item.children || [];
+        //     }
+        //     if (item.children) {
+        //         const result = this.findChildrenByKey(item.children, key);
+        //
+        //         if (result.length > 0) {
+        //             return result;
+        //         }
+        //     }
+        // }
+
+        let ret: any[] = [];
+
+        data.forEach(item => {
             if (item.key === key) {
-                return item.children || [];
-            } else if (item.children) {
+                ret = item.children || [];
+            }
+            if (item.children) {
                 const result = this.findChildrenByKey(item.children, key);
 
                 if (result.length > 0) {
-                    return result;
+                    ret = result;
                 }
             }
-        }
+        });
 
-        return [];
+        return ret;
     }
 
     /**

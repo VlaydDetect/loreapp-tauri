@@ -10,10 +10,10 @@ use crate::model::store::{Creatable, Patchable};
 use crate::prelude::*;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use surrealdb::{Surreal, engine::local::{Db, RocksDb}};
+use surrealdb::{Surreal, engine::local::{Db, RocksDb}, Response};
 use surrealdb::sql::{Array, Datetime, Object, thing, Value};
+use surrealdb::opt::IntoQuery;
 use crate::fs::{path_to_string, get_user_path};
-use surrealdb::Response;
 use crate::model::vmap;
 
 // --- Store definition and implementation
@@ -33,6 +33,11 @@ impl SurrealStore {
         Ok(Self { db: Box::new(surreal_db) })
     }
 
+    pub(crate) fn db(self) -> Box<Surreal<Db>> {
+        self.db
+    }
+
+    //#region ---------------------- SQL execs ----------------------
     pub(in crate::model) async fn exec_get(&self, tid: &str) -> Result<Object> {
         let sql = "SELECT * FROM $tid";
         let vars = vmap!["tid".into() => thing(tid)?.into()];
@@ -79,9 +84,16 @@ impl SurrealStore {
     pub(in crate::model) async fn exec_select<F: Into<FilterGroups>>(&self, tb: &str, filter_groups: Option<F>, list_options: ListOptions) -> Result<Vec<Object>> {
         let (sql, vars) = surreal_qb::build_query::build_select_query(tb.to_string(), filter_groups, list_options);
 
-        let mut ress = self.db.query(&sql).bind(vars).await?;
+        self.exec_custom_solo_query(sql, Some(vars.into())).await
+    }
+    //#endregion ---------------------- SQL execs ----------------------
 
-        solo_response_to_object_vec(ress)
+    //#region ---------------------- Graph execs ----------------------
+    pub (in crate::model) async fn exec_select_tree(&self, entity: &'static str) -> Result<Vec<Object>> {
+        let sql = "SELECT in, out FROM $tb";
+        let vars = vmap!("tb".into() => entity.into());
+
+        self.exec_custom_solo_query(sql, Some(vars.into())).await
     }
 
     pub(in crate::model) async fn exec_add_edge(&self, fid: &str, entity: &'static str, tid: &str) -> Result<Object> {
@@ -123,26 +135,35 @@ impl SurrealStore {
                         let sql = f!("BEGIN; DELETE $fid->{entity} WHERE out = $id; RELATE $tid->{entity}->$id; COMMIT;");
                         let vars = vmap!("fid".into() => thing(from_id)?.into(), "id".into() => thing(id)?.into(), "tid".into() => thing(to_id)?.into());
                         let mut ress = self.db.query(sql).bind(vars).await?;
-                        multi_response_to_object_vec(ress, 1)?.into_iter().next().ok_or_else(|| Error::UnresolvableResponse("Response is empty")).into()
+                        multi_response_to_object_vec(ress, 1)?.into_iter().next().ok_or_else(|| Error::ResponseIsEmpty).into()
                     }
                 }
             }
         }
     }
+    //#endregion ---------------------- Graph execs ----------------------
 
-    pub(crate) fn db(self) -> Box<Surreal<Db>> {
-        self.db
-    }
+    //#region ---------------------- Custom execs ----------------------
+    pub(in crate::model) async fn exec_custom_solo_query<S: IntoQuery + std::fmt::Debug>(&self, sql: S, vars: Option<Object>) -> Result<Vec<Object>> {
+        if let Some(vars) = vars {
+            let mut ress = self.db.query(sql).bind(vars).await?;
+            return solo_response_to_object_vec(ress);
+        }
 
-    pub(in crate::model) async fn exec_custom_solo_query(&self, sql: &str, vars: Object) -> Result<Vec<Object>> {
-        let mut ress = self.db.query(sql).bind(vars).await?;
+        let mut ress = self.db.query(sql).await?;
         solo_response_to_object_vec(ress)
     }
 
-    pub(in crate::model) async fn exec_custom_multi_query(&self, sqls: &str, vars: Object, to_take: usize) -> Result<Vec<Object>> {
-        let mut ress = self.db.query(sqls).bind(vars).await?;
-        multi_response_to_object_vec(ress, to_take)
+    pub(in crate::model) async fn exec_custom_multi_query(&self, sqls: &str, vars: Option<Object>, to_take: usize) -> Result<Vec<Object>> {
+        if let Some(vars) = vars {
+            let mut ress = self.db.query(sqls).bind(vars).await?;
+            return multi_response_to_object_vec(ress, to_take);
+        }
+
+        let mut ress = self.db.query(sqls).await?;
+        return multi_response_to_object_vec(ress, to_take);
     }
+    //#endregion ---------------------- Custom execs ----------------------
 }
 
 fn solo_response_to_object_vec(mut response: Response) -> Result<Vec<Object>> {
@@ -151,7 +172,7 @@ fn solo_response_to_object_vec(mut response: Response) -> Result<Vec<Object>> {
 }
 
 fn solo_response_to_object(mut response: Response) -> Result<Object> {
-    solo_response_to_object_vec(response)?.into_iter().next().ok_or_else(|| Error::UnresolvableResponse("Response is empty")).into()
+    solo_response_to_object_vec(response)?.into_iter().next().ok_or_else(|| Error::ResponseIsEmpty).into()
 }
 
 fn multi_response_to_object_vec(mut response: Response, to_take: usize) -> Result<Vec<Object>> {

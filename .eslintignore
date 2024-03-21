@@ -1,0 +1,10 @@
+/.git
+/.yarn
+/.vscode
+/.idea
+node_modules
+src-tauri
+public
+build
+pnpm-lock.yaml
+.gen.ts

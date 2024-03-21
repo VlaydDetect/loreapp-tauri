@@ -3,10 +3,10 @@ import { Circles } from 'react-loader-spinner';
 
 const Spinner = ({ message }: { message?: string }) => {
     return (
-        <div className="flex flex-col justify-center items-center w-full h-full">
+        <div className="tw-flex tw-flex-col tw-justify-center tw-items-center tw-w-full tw-h-full">
 			<Circles color="#00BFFF" height="50" width="200" wrapperClass="m-5"/>
 
-            <p className="text-lg text-center px-2">{message}</p>
+            <p className="tw-text-lg tw-text-center tw-px-2">{message}</p>
         </div>
     );
 };

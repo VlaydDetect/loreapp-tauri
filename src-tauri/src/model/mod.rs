@@ -8,7 +8,7 @@
 use ctx::Ctx;
 use crate::event::HubEvent;
 use serde::Serialize;
-use surrealdb::sql::Object;
+use surrealdb::sql::{Object, Value};
 use store::SurrealStore;
 use ts_rs::TS;
 
@@ -22,11 +22,13 @@ pub mod ctx;
 mod error;
 mod tags_and_categories;
 mod bmc_graph;
+mod documents_folder;
 
 // --- Re-exports
 pub use error::{Error, Result};
 pub use model_store::*;
 pub use document::*;
+pub use documents_folder::*;
 pub use picture::*;
 pub use tags_and_categories::*;
 // For dev only
@@ -42,6 +44,22 @@ fn fire_model_event<D>(ctx: &Ctx, entity: &str, action: &str, data: D)
         label: Some(action.to_string()),
         data: Some(data),
     });
+}
+
+fn get_parent_id(mut val: Object) -> Option<String> {
+    let mut parent: Option<String> = None;
+
+    if let Some(parent_obj) = val.remove("parent") {
+        if let Value::Array(surrealdb::sql::Array(parent_obj_vec)) = parent_obj {
+            if let Some(parent_obj) = parent_obj_vec.iter().next() {
+                if let Value::Thing(parent_obj) = parent_obj {
+                    parent = Some(parent_obj.to_raw());
+                }
+            }
+        }
+    }
+
+    parent
 }
 
 /// For now, all mutation queries will return an {id} struct.

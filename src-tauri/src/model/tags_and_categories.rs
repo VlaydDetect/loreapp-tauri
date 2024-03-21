@@ -5,11 +5,11 @@ use std::sync::Arc;
 use super::bmc_base::{Bmc, bmc_create, bmc_custom_multi_query, bmc_custom_solo_query, bmc_delete, bmc_get, bmc_list, bmc_update};
 use super::store::{Creatable, Filterable, Patchable, vec_to_surreal_value};
 use super::store::x_take::XTake;
-use crate::model::{Document, DocumentFilter, Error, Picture, PictureFilter, PictureForCreate, PictureForUpdate, Result, vmap};
+use crate::model::{Document, DocumentFilter, Error, get_parent_id, Picture, PictureFilter, PictureForCreate, PictureForUpdate, Result, vmap};
 use surreal_qb::filter::{FilterNodes, finalize_list_options, ListOptions, OpValsArray, OpValsString};
 use serde::{Deserialize, Serialize};
 use serde_with_macros::skip_serializing_none;
-use surrealdb::sql::{Object, Value};
+use surrealdb::sql::{Datetime, Object, Value};
 use ts_rs::TS;
 use crate::model::bmc_graph::{bmc_delete_edge, bmc_relate, bmc_rerelate_edge, GraphBmc};
 use crate::model::ctx::Ctx;
@@ -30,13 +30,11 @@ struct Categories {
 impl TryFrom<Object> for Categories {
     type Error = Error;
     fn try_from(mut val: Object) -> Result<Categories> {
-        let category = Categories {
+        Ok(Self {
             id: val.x_take_val("id")?,
             r#in: val.x_take_val("in")?,
             out: val.x_take_val("out")?,
-        };
-
-        Ok(category)
+        })
     }
 }
 
@@ -57,22 +55,9 @@ impl TryFrom<Object> for CategoryWithParent {
             name: val.x_take_val("name")?,
         };
 
-        let mut parent: Option<String> = None;
-        let parent_obj = val.remove("parent");
-
-        if let Some(parent_obj) = parent_obj {
-            if let Value::Array(surrealdb::sql::Array(parent_obj_vec)) = parent_obj {
-                if let Some(parent_obj) = parent_obj_vec.iter().next() {
-                    if let Value::Thing(parent_obj) = parent_obj.clone() {
-                        parent = Some(parent_obj.to_raw());
-                    }
-                }
-            }
-        }
-
         let with_parent = CategoryWithParent {
             category,
-            parent,
+            parent: get_parent_id(val),
         };
 
         Ok(with_parent)
@@ -255,26 +240,44 @@ impl CategoryBmc {
         bmc_list::<Category, _>(ctx, Self::ENTITY, filters, list_options).await
     }
 
+    pub async fn create_new_category(ctx: Arc<Ctx>) -> Result<Category> {
+        let sql = "LET $count = (SELECT count(string::startsWith(name,\"New Category\")) FROM category GROUP ALL)[0].count;\
+        IF $count = None THEN \
+        (CREATE category SET name = \"New Category 1\", ctime = $ctime) \
+        ELSE \
+        (CREATE category SET name = string::concat(\"New Category \", <string>($count+1)), ctime = $ctime) \
+        END";
+
+        let now = Datetime::default().to_string();
+        let vars = vmap!("ctime".into() => now.into());
+        let result = bmc_custom_multi_query::<Category>(ctx, Self::ENTITY, sql, Some(vars.into())).await?;
+
+        result
+            .into_iter()
+            .next()
+            .ok_or(Error::Store(crate::model::store::Error::ResponseIsEmpty))
+    }
+
     pub async fn attach_subcategory(ctx: Arc<Ctx>, id: &str, sub_id: &str) -> Result<CategoriesTree> {
         // FIXME: check if subcategory already attached to this category
         bmc_relate::<Categories>(ctx.clone(), Self::RELATION_ENTITY, id, sub_id).await?;
-        Self::list_with_parent(ctx).await
+        Self::list_tree(ctx).await
     }
 
     pub async fn detach_subcategory(ctx: Arc<Ctx>, id: &str, sub_id: &str) -> Result<CategoriesTree> {
         bmc_delete_edge::<Categories>(ctx.clone(), Self::RELATION_ENTITY, id, sub_id).await?;
-        Self::list_with_parent(ctx).await
+        Self::list_tree(ctx).await
     }
 
     pub async fn reattach_subcategory(ctx: Arc<Ctx>, id: &str, from_id: Option<&str>, to_id: Option<&str>) -> Result<CategoriesTree> {
         bmc_rerelate_edge::<Categories>(ctx.clone(), Self::RELATION_ENTITY, id, from_id, to_id).await?;
-        Self::list_with_parent(ctx).await
+        Self::list_tree(ctx).await
     }
 
-    pub async fn list_with_parent(ctx: Arc<Ctx>) -> Result<CategoriesTree> {
+    pub async fn list_tree(ctx: Arc<Ctx>) -> Result<CategoriesTree> {
         let sql = f!("SELECT *, <-{}<-category.id AS parent FROM category ORDER BY id ASC;", Self::RELATION_ENTITY).into_boxed_str();
-        let vars = vmap!["tb".into() => Self::RELATION_ENTITY.into()];
-        let cwps = bmc_custom_solo_query::<CategoryWithParent>(ctx, Self::ENTITY, &sql, vars.into()).await?;
+        // let vars = vmap!["tb".into() => Self::ENTITY.into()];
+        let cwps = bmc_custom_solo_query::<CategoryWithParent>(ctx, Self::ENTITY, &sql, None).await?;
         let tree = build_categories_tree(cwps);
         Ok(tree)
     }
@@ -385,7 +388,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_tree_build_1() {
+    fn test_categories_tree_build_1() {
         let cwps = vec![
             CategoryWithParent {
                 category: Category {

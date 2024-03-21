@@ -1,30 +1,42 @@
 //! All model and controller for the Document type
-use super::bmc_base::{bmc_create, bmc_delete, bmc_get, bmc_list, bmc_update, Bmc};
+use super::bmc_base::{
+    Bmc, bmc_create, bmc_delete, bmc_get, bmc_list, bmc_update,
+    bmc_custom_multi_query, bmc_custom_solo_query,
+};
 use super::store::x_take::XTake;
 use super::store::{Creatable, Filterable, Patchable, vec_to_surreal_value};
-use super::{ModelMutateResultData, vmap};
+use super::{vmap, ModelMutateResultData};
+use crate::model::bmc_graph::{GraphBmc, bmc_delete_edge, bmc_relate, bmc_rerelate_edge};
 use crate::model::ctx::Ctx;
 use crate::model::{Error, Result};
-use surreal_qb::filter::{FilterNode, FilterNodes, finalize_list_options, IntoFilterNodes, ListOptions, OpValsArray, OpValsString};
+use crate::prelude::f;
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use serde_with_macros::skip_serializing_none;
+use std::collections::HashMap;
 use std::sync::Arc;
-use surrealdb::sql::{Object, Value};
+use surreal_qb::filter::{
+    finalize_list_options, FilterNode, FilterNodes, IntoFilterNodes, ListOptions, OpValsArray,
+    OpValsString,
+};
+use surrealdb::sql::{Datetime, Object, Value};
 use ts_rs::TS;
+
+// TODO: Does it need an Option for Vec's if they can be empty?
 
 //#region ---------- Document ----------
 /// Name must be unique
 #[skip_serializing_none]
-#[derive(Debug, Serialize, Deserialize, Default, TS, Clone)]
+#[derive(Debug, Serialize, Deserialize, Default, TS, Clone, PartialEq)]
 #[ts(export, export_to = "../src/interface/")]
 pub struct Document {
     pub id: String,
-    pub title: String,
     pub ctime: String,
+    pub title: String,
     pub body: Option<String>,
     pub tags: Option<Vec<String>>,
     pub categories: Option<Vec<String>>,
-    pub used_pics: Option<Vec<String>>
+    pub used_pics: Option<Vec<String>>,
 }
 
 impl TryFrom<Object> for Document {
@@ -32,8 +44,8 @@ impl TryFrom<Object> for Document {
     fn try_from(mut val: Object) -> Result<Document> {
         let document = Document {
             id: val.x_take_val("id")?,
-            title: val.x_take_val("title")?,
             ctime: val.x_take_val("ctime")?,
+            title: val.x_take_val("title")?,
             body: val.x_take("body")?,
             tags: val.x_take("tags")?,
             categories: val.x_take("categories")?,
@@ -45,7 +57,6 @@ impl TryFrom<Object> for Document {
 }
 
 /// Folder must be created with default tittle `New Document` + number of default named folders + 1
-#[skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, Default, TS)]
 #[ts(export, export_to = "../src/interface/")]
 pub struct DocumentForCreate {
@@ -55,7 +66,6 @@ pub struct DocumentForCreate {
 impl From<DocumentForCreate> for Value {
     fn from(val: DocumentForCreate) -> Self {
         let mut data = vmap!("title".into() => val.title.into());
-
         Value::Object(data.into())
     }
 }
@@ -70,7 +80,7 @@ pub struct DocumentForUpdate {
     pub body: Option<String>,
     pub tags: Option<Vec<String>>,
     pub categories: Option<Vec<String>>,
-    pub used_pics: Option<Vec<String>>
+    pub used_pics: Option<Vec<String>>,
 }
 
 impl From<DocumentForUpdate> for Value {
@@ -106,12 +116,12 @@ impl Patchable for DocumentForUpdate {}
 #[derive(FilterNodes, Debug, Deserialize, Default)]
 pub struct DocumentFilter {
     pub id: Option<OpValsString>,
-    pub title: Option<OpValsString>, // TODO: surrealdb full-text search
-    pub body: Option<OpValsString>, // TODO: surrealdb full-text search
     pub ctime: Option<OpValsString>,
+    pub title: Option<OpValsString>, // TODO: surrealdb full-text search
+    pub body: Option<OpValsString>,  // TODO: surrealdb full-text search
     pub tags: Option<OpValsArray>,
     pub categories: Option<OpValsArray>,
-    pub used_pics: Option<OpValsArray>
+    pub used_pics: Option<OpValsArray>,
 }
 
 impl Filterable for DocumentFilter {}
@@ -139,9 +149,33 @@ impl DocumentBmc {
         bmc_delete(ctx, Self::ENTITY, id).await
     }
 
-    pub async fn list(ctx: Arc<Ctx>, filters: Option<Vec<DocumentFilter>>, list_options: Option<ListOptions>) -> Result<Vec<Document>> {
+    pub async fn list(
+        ctx: Arc<Ctx>,
+        filters: Option<Vec<DocumentFilter>>,
+        list_options: Option<ListOptions>,
+    ) -> Result<Vec<Document>> {
         let list_options = finalize_list_options(list_options)?;
         bmc_list(ctx, Self::ENTITY, filters, list_options).await
+    }
+
+    pub async fn create_untitled(ctx: Arc<Ctx>) -> Result<Document> {
+        // let sql = "CREATE document SET title = function() {\ // TODO: when scripting features will compile (when rquicksj will compile)
+        // const allUntitledDocs = (await surrealdb.query(\"SELECT count(string::startsWith(title,\"untitled\")) FROM document GROUP ALL\"))[0].count;\
+        // return `untitled${allUntitledDocs + 1}`; }";
+        let sql = "LET $count = (SELECT count(string::startsWith(title,\"untitled\")) FROM document GROUP ALL)[0].count;\
+        IF $count = None THEN \
+        (CREATE document SET title = \"untitled1\", ctime = $ctime) \
+        ELSE \
+        (CREATE document SET title = string::concat(\"untitled\", <string>($count+1)), ctime = $ctime) \
+        END";
+        let now = Datetime::default().to_string();
+        let vars = vmap!("ctime".into() => now.into());
+        let result = bmc_custom_multi_query::<Document>(ctx, Self::ENTITY, sql, Some(vars.into())).await?;
+
+        result
+            .into_iter()
+            .next()
+            .ok_or(Error::Store(crate::model::store::Error::ResponseIsEmpty))
     }
 }
 //#endregion ---------- Document ----------

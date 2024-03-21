@@ -7,41 +7,41 @@ import {mergeRefs} from "@/utils/utils"
 
 const variants = cva(
     [
-        'rounded-full', 'tracking-wide', 'cursor-pointer', 'inline-flex',
-        'items-center', 'justify-center', 'relative', 'transition',
-        'outline-none', 'data-[pressed=true]:scale-[0.98]', 'disabled:cursor-not-allowed'
+        'tw-rounded-full', 'tw-tracking-wide', 'tw-cursor-pointer', 'tw-inline-flex',
+        'tw-items-center', 'tw-justify-center', 'tw-relative', 'tw-transition',
+        'tw-outline-none', 'data-[pressed=true]:tw-scale-[0.98]', 'disabled:tw-cursor-not-allowed'
     ],
     {
         variants: {
             variant: {
                 primary: [
-                    'bg-indigo-500', 'text-white', 'font-semibold', 'shadow',
-                    'data-[hovered=true]:bg-indigo-600', 'data-[hovered=true]:shadow-md', 'data-[focus-visible=true]:ring-indigo-500/70', 'data-[focus-visible=true]:ring-offset-2',
-                    'data-[focus-visible=true]:ring-2', 'disabled:!bg-indigo-500/50', 'disabled:!shadow'
+                    'tw-bg-indigo-500', 'tw-text-white', 'tw-font-semibold', 'shadow',
+                    'data-[hovered=true]:tw-bg-indigo-600', 'data-[hovered=true]:tw-shadow-md', 'data-[focus-visible=true]:tw-ring-indigo-500/70', 'data-[focus-visible=true]:tw-ring-offset-2',
+                    'data-[focus-visible=true]:tw-ring-2', 'disabled:!tw-bg-indigo-500/50', 'disabled:!tw-shadow'
                 ],
                 secondary: [
-                    'font-normal', 'bg-gray-50', 'data-[hovered=true]:bg-gray-100', 'disabled:!bg-gray-50',
-                    'text-gray-950', 'shadow', 'data-[hovered=true]:shadow-md', 'border',
-                    'border-neutral-200/50', 'data-[focus-visible=true]:ring-offset-2', 'data-[focus-visible=true]:ring-2',
-                    'data-[focus-visible=true]:ring-gray-200',
+                    'tw-font-normal', 'tw-bg-gray-50', 'data-[hovered=true]:tw-bg-gray-100', 'disabled:!tw-bg-gray-50',
+                    'tw-text-gray-950', 'tw-shadow', 'data-[hovered=true]:tw-shadow-md', 'tw-border',
+                    'tw-border-neutral-200/50', 'data-[focus-visible=true]:tw-ring-offset-2', 'data-[focus-visible=true]:tw-ring-2',
+                    'data-[focus-visible=true]:tw-ring-gray-200',
                 ],
                 destructive: [
-                    'font-semibold', 'bg-red-500', 'text-white', 'rounded-full',
-                    'shadow', 'data-[hovered=true]:shadow-md', 'disabled:!bg-red-500/50 disabled:!shadow', 'data-[focus-visible=true]:ring-offset-2',
-                    'data-[focus-visible=true]:ring-2', 'data-[focus-visible=true]:ring-red-200'
+                    'tw-font-semibold', 'tw-bg-red-500', 'tw-text-white', 'tw-rounded-full',
+                    'tw-shadow', 'data-[hovered=true]:tw-shadow-md', 'disabled:!tw-bg-red-500/50 disabled:!tw-shadow', 'data-[focus-visible=true]:tw-ring-offset-2',
+                    'data-[focus-visible=true]:tw-ring-2', 'data-[focus-visible=true]:tw-ring-red-200'
                 ],
                 ghost: [
-                    'font-light', 'text-gray-950', 'data-[hovered=true]:text-gray-600', 'disabled:!text-gray-950',
-                    'data-[focus-visible=true]:ring-gray-300', 'data-[focus-visible=true]:ring-1'
+                    'tw-font-light', 'tw-text-gray-950', 'data-[hovered=true]:tw-text-gray-600', 'disabled:!tw-text-gray-950',
+                    'data-[focus-visible=true]:tw-ring-gray-300', 'data-[focus-visible=true]:tw-ring-1'
                 ],
                 link: [
-                    'font-light', 'data-[hovered=true]:text-indigo-600', 'disabled:!text-indigo-500/50', 'disabled:!no-underline'
+                    'tw-font-light', 'data-[hovered=true]:tw-text-indigo-600', 'disabled:!tw-text-indigo-500/50', 'disabled:!tw-no-underline'
                 ],
             },
             size: {
-                small: ['text-sm', 'py-1', 'px-4'],
-                default: ['py-2', 'px-8', 'leading-6'],
-                large: ['text-lg', 'py-3', 'px-12'],
+                small: ['tw-text-sm', 'tw-py-1', 'tw-px-4'],
+                default: ['tw-py-2', 'tw-px-8', 'tw-leading-6'],
+                large: ['tw-text-lg', 'tw-py-3', 'tw-px-12'],
             }
         },
         defaultVariants: {
@@ -52,8 +52,8 @@ const variants = cva(
 )
 
 const Loading = () => (
-    <div className="absolute inline-flex items-center">
-        <div className="w-4 h-4 rounded-full border-2 border-b-transparent animate-spin border-[inherit]"/>
+    <div className="tw-absolute tw-inline-flex tw-items-center">
+        <div className="tw-w-4 tw-h-4 tw-rounded-full tw-border-2 tw-border-b-transparent tw-animate-spin tw-border-[inherit]"/>
     </div>
 )
 
@@ -85,7 +85,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>((props, forwardedRef) 
             data-focus-visible={isFocusVisible || undefined}
         >
             {loading && <Loading/>}
-            <span className={clsx('transition', {'opacity-0': loading, 'opacity-100': !loading})}>{children}</span>
+            <span className={clsx('tw-transition', {'tw-opacity-0': loading, 'tw-opacity-100': !loading})}>{children}</span>
         </button>
     )
 })

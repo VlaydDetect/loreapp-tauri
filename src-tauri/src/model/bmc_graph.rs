@@ -8,6 +8,15 @@ pub(super) trait GraphBmc {
     const RELATION_ENTITY: &'static str;
 }
 
+pub(super) async fn bmc_list_tree<E>(ctx: Arc<Ctx>, entity: &'static str) -> Result<Vec<E>>
+    where
+        E: TryFrom<Object, Error = Error>,
+{
+    let objects = ctx.get_model_manager().store().exec_select_tree(entity).await?;
+
+    objects.into_iter().map(|o| o.try_into()).collect::<Result<_>>()
+}
+
 pub(super) async fn bmc_relate<E>(ctx: Arc<Ctx>, entity: &'static str, from_id: &str, to_id: &str) -> Result<E>
     where
         E: TryFrom<Object, Error=Error> + Sync + Send + DeserializeOwned + Serialize

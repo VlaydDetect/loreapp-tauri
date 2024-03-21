@@ -6,7 +6,7 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "modql and sea-query mix for SurrealDB"
 categories = ["data-structures"]
-keywords = ["query-language", "surrealdb", "model", "data-model", "graphql"]
+keywords = ["query-language", "surrealdb", "model", "data-model"]
 # homepage = "https://github.com/jeremychone/rust-modql"
 # repository = "https://github.com/jeremychone/rust-modql"
 
@@ -19,6 +19,7 @@ default = ["modql-macros"]
 
 [dependencies]
 modql-macros = { version = "0.3", path = "modql-macros", optional = true }
+#surrealdb = {git = "https://github.com/surrealdb/surrealdb.git", branch = "main", default-features = false, features = ['kv-rocksdb', 'scripting', 'ml'] }
 surrealdb = {git = "https://github.com/surrealdb/surrealdb.git", branch = "main", default-features = false }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
