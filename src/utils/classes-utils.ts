@@ -1,8 +1,23 @@
-import { type ClassValue, clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+// import { type ClassValue, clsx } from 'clsx';
+// import { twMerge } from 'tailwind-merge';
+//
+// export function cn(...inputs: ClassValue[]) {
+//     return twMerge(clsx(inputs));
+// }
 
-export function cn(...inputs: ClassValue[]) {
-    return twMerge(clsx(inputs));
+import { getDefaultConfig, createTailwindMerge, ClassNameValue } from 'tailwind-merge';
+import resolveConfig from 'tailwindcss/resolveConfig';
+import tailwindConfig from 'tailwind.config.ts';
+
+const twConfig = resolveConfig(tailwindConfig);
+
+const twMerge = createTailwindMerge(() => ({
+    ...getDefaultConfig(),
+    prefix: twConfig.prefix,
+}));
+
+export function cn(...inputs: ClassNameValue[]) {
+    return twMerge(inputs);
 }
 
 export const globalStateClasses = {

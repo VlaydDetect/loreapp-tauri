@@ -1,14 +1,5 @@
-/**
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- */
-
-import type {EditorConfig, LexicalNode, SerializedTextNode} from 'lexical';
-
-import {TextNode} from 'lexical';
+import type { EditorConfig, LexicalNode, SerializedTextNode } from 'lexical';
+import { TextNode } from 'lexical';
 
 export type SerializedKeywordNode = SerializedTextNode;
 
@@ -33,7 +24,7 @@ export class KeywordNode extends TextNode {
     exportJSON(): SerializedKeywordNode {
         return {
             ...super.exportJSON(),
-            type: 'keyword',
+            type: this.getType(),
             version: 1,
         };
     }

@@ -1,16 +1,20 @@
-/**
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- */
+import React from 'react';
 
-import './Placeholder.css';
-
-import * as React from 'react';
-import {ReactNode} from 'react';
-
-export default function Placeholder({children, className,}: { children: ReactNode; className?: string; }) {
-    return <div className={className || 'Placeholder__root'}>{children}</div>;
+export default function Placeholder({
+    children,
+    className,
+}: {
+    children: React.ReactNode;
+    className?: string;
+}): JSX.Element {
+    return (
+        <div
+            className={
+                className ||
+                'tw-text-[15px] tw-text-[#999] tw-overflow-hidden tw-absolute tw-text-ellipsis tw-left-[28px] tw-right-[28px] tw-top-[8px] tw-select-none tw-whitespace-nowrap tw-inline-block tw-pointer-events-none lg-max:tw-left-[8px]'
+            }
+        >
+            {children}
+        </div>
+    );
 }

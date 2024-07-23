@@ -23,7 +23,7 @@ pub fn img_to_data_url<T, S>(input: T, extension: S) -> String
     format!("data:image/{};base64,{}", extension, base64_data)
 }
 
-pub fn read_file_as_data_url<P>(filepath: P) -> Result<String>
+pub fn read_file_as_data_url<P>(filepath: P) -> std::result::Result<String, Error>
     where P: AsRef<Path>,
 {
     let mut file = OpenOptions::new().read(true).open(&filepath)?;

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useRouter } from '@tanstack/react-router';
 import {
     defaultTab,
     getWindowState,
@@ -9,7 +10,6 @@ import {
     updateTabs,
 } from '@/interface';
 import { leftSidebarTabs, rightSidebarTabs } from '@/constants/window-titlebar';
-import { useRouter } from '@tanstack/react-router';
 
 interface TabsProviderProps {
     children: React.ReactNode;

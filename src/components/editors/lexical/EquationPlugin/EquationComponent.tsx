@@ -1,13 +1,6 @@
-/**
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- */
-
-import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
-import {mergeRegister} from '@lexical/utils';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
+import { mergeRegister } from '@lexical/utils';
 import {
     $getNodeByKey,
     $getSelection,
@@ -17,21 +10,19 @@ import {
     NodeKey,
     SELECTION_CHANGE_COMMAND,
 } from 'lexical';
-import * as React from 'react';
-import {useCallback, useEffect, useRef, useState} from 'react';
-import {ErrorBoundary} from 'react-error-boundary';
+import { ErrorBoundary } from 'react-error-boundary';
 
 import EquationEditor from '../ui/EquationEditor';
 import KatexRenderer from '../ui/KatexRenderer';
-import {$isEquationNode} from './EquationNode';
+import { $isEquationNode } from './EquationNode';
 
-type EquationComponentProps = {
+type Props = {
     equation: string;
     inline: boolean;
     nodeKey: NodeKey;
 };
 
-export default function EquationComponent({equation, inline, nodeKey}: EquationComponentProps) {
+const EquationComponent: React.FC<Props> = ({ equation, inline, nodeKey }) => {
     const [editor] = useLexicalComposerContext();
     const [equationValue, setEquationValue] = useState(equation);
     const [showEquationEditor, setShowEquationEditor] = useState<boolean>(false);
@@ -64,7 +55,7 @@ export default function EquationComponent({equation, inline, nodeKey}: EquationC
             return mergeRegister(
                 editor.registerCommand(
                     SELECTION_CHANGE_COMMAND,
-                    (payload) => {
+                    () => {
                         const activeElement = document.activeElement;
                         const inputElem = inputRef.current;
                         if (inputElem !== activeElement) {
@@ -76,7 +67,7 @@ export default function EquationComponent({equation, inline, nodeKey}: EquationC
                 ),
                 editor.registerCommand(
                     KEY_ESCAPE_COMMAND,
-                    (payload) => {
+                    () => {
                         const activeElement = document.activeElement;
                         const inputElem = inputRef.current;
                         if (inputElem === activeElement) {
@@ -88,41 +79,39 @@ export default function EquationComponent({equation, inline, nodeKey}: EquationC
                     COMMAND_PRIORITY_HIGH,
                 ),
             );
-        } else {
-            return editor.registerUpdateListener(({editorState}) => {
-                const isSelected = editorState.read(() => {
-                    const selection = $getSelection();
-                    return (
-                        $isNodeSelection(selection) &&
-                        selection.has(nodeKey) &&
-                        selection.getNodes().length === 1
-                    );
-                });
-                if (isSelected) {
-                    setShowEquationEditor(true);
-                }
-            });
         }
+
+        return editor.registerUpdateListener(({ editorState }) => {
+            const isSelected = editorState.read(() => {
+                const selection = $getSelection();
+                return (
+                    $isNodeSelection(selection) &&
+                    selection.has(nodeKey) &&
+                    selection.getNodes().length === 1
+                );
+            });
+            if (isSelected) {
+                setShowEquationEditor(true);
+            }
+        });
     }, [editor, nodeKey, onHide, showEquationEditor]);
 
-    return (
-        <>
-            {showEquationEditor ? (
-                <EquationEditor
-                    equation={equationValue}
-                    setEquation={setEquationValue}
-                    inline={inline}
-                    ref={inputRef}
-                />
-            ) : (
-                <ErrorBoundary onError={(e) => editor._onError(e)} fallback={null}>
-                    <KatexRenderer
-                        equation={equationValue}
-                        inline={inline}
-                        onDoubleClick={() => setShowEquationEditor(true)}
-                    />
-                </ErrorBoundary>
-            )}
-        </>
+    return showEquationEditor ? (
+        <EquationEditor
+            equation={equationValue}
+            setEquation={setEquationValue}
+            inline={inline}
+            ref={inputRef}
+        />
+    ) : (
+        <ErrorBoundary onError={e => editor._onError(e)} fallback={null}>
+            <KatexRenderer
+                equation={equationValue}
+                inline={inline}
+                onDoubleClick={() => setShowEquationEditor(true)}
+            />
+        </ErrorBoundary>
     );
-}
+};
+
+export default EquationComponent;

@@ -7,8 +7,8 @@ export * from './string-utils';
 export * from './type-utils';
 export * from './classes-utils';
 export * from './utils';
-
 export * from './setRef';
+export * from './json';
 
 /**
  * Safe chained function.

@@ -6,11 +6,8 @@
  *
  */
 
-import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
-import {
-    LexicalContextMenuPlugin,
-    MenuOption,
-} from '@lexical/react/LexicalContextMenuPlugin';
+import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
+import { LexicalContextMenuPlugin, MenuOption } from '@lexical/react/LexicalContextMenuPlugin';
 import {
     type LexicalNode,
     $getSelection,
@@ -19,19 +16,23 @@ import {
     CUT_COMMAND,
     PASTE_COMMAND,
 } from 'lexical';
-import {useCallback, useMemo} from 'react';
+import { useCallback, useMemo } from 'react';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 
-interface IMenuItemProps {
+function ContextMenuItem({
+    index,
+    isSelected,
+    onClick,
+    onMouseEnter,
+    option,
+}: {
     index: number;
     isSelected: boolean;
     onClick: () => void;
     onMouseEnter: () => void;
     option: ContextMenuOption;
-}
-
-function ContextMenuItem({index, isSelected, onClick, onMouseEnter, option}: IMenuItemProps) {
+}) {
     let className = 'item';
     if (isSelected) {
         className += ' selected';
@@ -46,20 +47,24 @@ function ContextMenuItem({index, isSelected, onClick, onMouseEnter, option}: IMe
             aria-selected={isSelected}
             id={'typeahead-item-' + index}
             onMouseEnter={onMouseEnter}
-            onClick={onClick}>
+            onClick={onClick}
+        >
             <span className="text">{option.title}</span>
         </li>
     );
 }
 
-interface IMenuProps {
+function ContextMenu({
+    options,
+    selectedItemIndex,
+    onOptionClick,
+    onOptionMouseEnter,
+}: {
     selectedItemIndex: number | null;
     onOptionClick: (option: ContextMenuOption, index: number) => void;
     onOptionMouseEnter: (index: number) => void;
     options: Array<ContextMenuOption>;
-}
-
-function ContextMenu({options, selectedItemIndex, onOptionClick, onOptionMouseEnter}: IMenuProps) {
+}) {
     return (
         <div className="typeahead-popover">
             <ul>
@@ -93,23 +98,23 @@ export class ContextMenuOption extends MenuOption {
     }
 }
 
-export default function ContextMenuPlugin() {
+export default function ContextMenuPlugin(): JSX.Element {
     const [editor] = useLexicalComposerContext();
 
     const options = useMemo(() => {
         return [
             new ContextMenuOption(`Copy`, {
-                onSelect: (_node) => {
+                onSelect: _node => {
                     editor.dispatchCommand(COPY_COMMAND, null);
                 },
             }),
             new ContextMenuOption(`Cut`, {
-                onSelect: (_node) => {
+                onSelect: _node => {
                     editor.dispatchCommand(CUT_COMMAND, null);
                 },
             }),
             new ContextMenuOption(`Paste`, {
-                onSelect: (_node) => {
+                onSelect: _node => {
                     navigator.clipboard.read().then(async (...args) => {
                         const data = new DataTransfer();
 
@@ -117,7 +122,7 @@ export default function ContextMenuPlugin() {
                         const item = items[0];
 
                         const permission = await navigator.permissions.query({
-                            // @ts-ignore These types are incorrect.
+                            // @ts-expect-error These types are incorrect.
                             name: 'clipboard-read',
                         });
                         if (permission.state === 'denied') {
@@ -139,10 +144,10 @@ export default function ContextMenuPlugin() {
                 },
             }),
             new ContextMenuOption(`Paste as Plain Text`, {
-                onSelect: (_node) => {
+                onSelect: _node => {
                     navigator.clipboard.read().then(async (...args) => {
                         const permission = await navigator.permissions.query({
-                            // @ts-ignore These types are incorrect.
+                            // @ts-expect-error These types are incorrect.
                             name: 'clipboard-read',
                         });
 
@@ -163,7 +168,7 @@ export default function ContextMenuPlugin() {
                 },
             }),
             new ContextMenuOption(`Delete Node`, {
-                onSelect: (_node) => {
+                onSelect: _node => {
                     const selection = $getSelection();
                     if ($isRangeSelection(selection)) {
                         const currentNode = selection.anchor.getNode();
@@ -196,38 +201,34 @@ export default function ContextMenuPlugin() {
             onSelectOption={onSelectOption}
             menuRenderFn={(
                 anchorElementRef,
-                {
-                    selectedIndex,
-                    options: _options,
-                    selectOptionAndCleanUp,
-                    setHighlightedIndex,
-                },
-                {setMenuRef},
+                { selectedIndex, options: _options, selectOptionAndCleanUp, setHighlightedIndex },
+                { setMenuRef },
             ) =>
                 anchorElementRef.current
                     ? ReactDOM.createPortal(
-                        <div
-                            className="typeahead-popover auto-embed-menu"
-                            style={{
-                                marginLeft: anchorElementRef.current.style.width,
-                                userSelect: 'none',
-                                width: 200,
-                            }}
-                            ref={setMenuRef}>
-                            <ContextMenu
-                                options={options}
-                                selectedItemIndex={selectedIndex}
-                                onOptionClick={(option: ContextMenuOption, index: number) => {
-                                    setHighlightedIndex(index);
-                                    selectOptionAndCleanUp(option);
-                                }}
-                                onOptionMouseEnter={(index: number) => {
-                                    setHighlightedIndex(index);
-                                }}
-                            />
-                        </div>,
-                        anchorElementRef.current,
-                    )
+                          <div
+                              className="typeahead-popover auto-embed-menu"
+                              style={{
+                                  marginLeft: anchorElementRef.current.style.width,
+                                  userSelect: 'none',
+                                  width: 200,
+                              }}
+                              ref={setMenuRef}
+                          >
+                              <ContextMenu
+                                  options={options}
+                                  selectedItemIndex={selectedIndex}
+                                  onOptionClick={(option: ContextMenuOption, index: number) => {
+                                      setHighlightedIndex(index);
+                                      selectOptionAndCleanUp(option);
+                                  }}
+                                  onOptionMouseEnter={(index: number) => {
+                                      setHighlightedIndex(index);
+                                  }}
+                              />
+                          </div>,
+                          anchorElementRef.current,
+                      )
                     : null
             }
         />

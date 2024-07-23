@@ -5,8 +5,9 @@
  * LICENSE file in the root directory of this source tree.
  *
  */
-import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
-import {$insertNodeToNearestRoot, mergeRegister} from '@lexical/utils';
+import { useEffect } from 'react';
+import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
+import { $insertNodeToNearestRoot, mergeRegister } from '@lexical/utils';
 import {
     $getSelection,
     $isRangeSelection,
@@ -14,9 +15,8 @@ import {
     createCommand,
     LexicalCommand,
 } from 'lexical';
-import {useEffect} from 'react';
 
-import {$createPageBreakNode, PageBreakNode} from './node';
+import { $createPageBreakNode, PageBreakNode } from './node';
 
 export const INSERT_PAGE_BREAK: LexicalCommand<undefined> = createCommand();
 
@@ -24,10 +24,9 @@ export default function PageBreakPlugin(): JSX.Element | null {
     const [editor] = useLexicalComposerContext();
 
     useEffect(() => {
-        if (!editor.hasNodes([PageBreakNode]))
-            throw new Error(
-                'PageBreakPlugin: PageBreakNode is not registered on editor',
-            );
+        if (!editor.hasNodes([PageBreakNode])) {
+            throw new Error('PageBreakPlugin: PageBreakNode is not registered on editor');
+        }
 
         return mergeRegister(
             editor.registerCommand(
@@ -35,7 +34,9 @@ export default function PageBreakPlugin(): JSX.Element | null {
                 () => {
                     const selection = $getSelection();
 
-                    if (!$isRangeSelection(selection)) return false;
+                    if (!$isRangeSelection(selection)) {
+                        return false;
+                    }
 
                     const focusNode = selection.focus.getNode();
                     if (focusNode !== null) {

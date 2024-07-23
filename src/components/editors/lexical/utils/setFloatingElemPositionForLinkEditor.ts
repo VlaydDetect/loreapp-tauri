@@ -8,7 +8,13 @@
 const VERTICAL_GAP = 10;
 const HORIZONTAL_OFFSET = 5;
 
-export function setFloatingElemPositionForLinkEditor(targetRect: ClientRect | null, floatingElem: HTMLElement, anchorElem: HTMLElement, verticalGap: number = VERTICAL_GAP, horizontalOffset: number = HORIZONTAL_OFFSET): void {
+export function setFloatingElemPositionForLinkEditor(
+    targetRect: DOMRect | null,
+    floatingElem: HTMLElement,
+    anchorElem: HTMLElement,
+    verticalGap: number = VERTICAL_GAP,
+    horizontalOffset: number = HORIZONTAL_OFFSET,
+): void {
     const scrollerElem = anchorElem.parentElement;
 
     if (targetRect === null || !scrollerElem) {

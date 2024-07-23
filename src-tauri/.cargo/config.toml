@@ -1,2 +1,6 @@
 [build]
 target = "x86_64-pc-windows-msvc"
+rustflags = ["--cfg", "surrealdb_unstable"]
+
+[env]
+TS_GEN_EXPORT_DIR = { value = "../src/interface/bindings/", relative = true }

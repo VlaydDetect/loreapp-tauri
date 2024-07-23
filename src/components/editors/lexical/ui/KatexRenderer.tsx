@@ -8,15 +8,17 @@
 
 import katex from 'katex';
 import * as React from 'react';
-import {useEffect, useRef} from 'react';
+import { useEffect, useRef } from 'react';
 
-type TProps = Readonly<{
+export default function KatexRenderer({
+    equation,
+    inline,
+    onDoubleClick,
+}: Readonly<{
     equation: string;
     inline: boolean;
     onDoubleClick: () => void;
-}>
-
-export default function KatexRenderer({equation, inline, onDoubleClick}: TProps) {
+}>): JSX.Element {
     const katexElementRef = useRef(null);
 
     useEffect(() => {
@@ -40,12 +42,7 @@ export default function KatexRenderer({equation, inline, onDoubleClick}: TProps)
         // without having a physical space.
         <>
             <img src="#" alt="" />
-            <span
-                role="button"
-                tabIndex={-1}
-                onDoubleClick={onDoubleClick}
-                ref={katexElementRef}
-            />
+            <span role="button" tabIndex={-1} onDoubleClick={onDoubleClick} ref={katexElementRef} />
             <img src="#" alt="" />
         </>
     );

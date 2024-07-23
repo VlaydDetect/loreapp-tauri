@@ -1,17 +1,32 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
+import { observer } from 'mobx-react-lite';
 import { useNavigate, useParams } from '@tanstack/react-router';
-import { Picture } from '@/interface';
 import { BsFillArrowUpRightCircleFill } from 'react-icons/bs';
 import { AiTwotoneDelete } from 'react-icons/ai';
+import { Picture } from '@/interface';
+import { useMobXStores } from '@/context';
 
-const PictureView = ({ picture, className }: { picture: Picture; className: string }) => {
+const PictureView = observer(({ picture }: { picture: Picture }) => {
+    const {
+        picturesStore: { deletePicture },
+    } = useMobXStores();
+
     const [picHovered, setPicHovered] = useState(false);
     const [documentsUsing, setDocumentsUsing] = useState<string[]>([]); // TODO: array of documents that use this picture
     const navigate = useNavigate();
     // @ts-ignore
     const { tabId } = useParams({ strict: false });
 
-    const deletePic = (picture: Picture) => {};
+    const onPicClick = () => {
+        navigate({
+            to: `/tabs/$tabId/gallery/$picId`,
+            params: { tabId, picId: picture.id },
+        });
+    };
+
+    const deletePic = (id: string) => {
+        deletePicture(id);
+    };
 
     return (
         <div className="tw-m-2">
@@ -19,19 +34,9 @@ const PictureView = ({ picture, className }: { picture: Picture; className: stri
                 className="tw-relative tw-cursor-zoom-in tw-w-auto hover:tw-shadow-lg tw-rounded-lg tw-overflow-hidden tw-transition-all tw-duration-500 tw-ease-in-out"
                 onMouseEnter={() => setPicHovered(true)}
                 onMouseLeave={() => setPicHovered(false)}
-                onClick={() => {
-                    // @ts-ignore
-                    navigate({
-                        to: `/tabs/$tabId/gallery/$picId`,
-                        params: { tabId, picId: picture.id },
-                    });
-                }}
+                onClick={onPicClick}
             >
-                <img
-                    className="tw-rounded-lg tw-w-full"
-                    src={picture.img_path}
-                    alt="gallery-picture"
-                />
+                <img className="tw-rounded-lg tw-w-full" src={picture.path} alt="gallery-picture" />
                 {picHovered && (
                     <div className="tw-absolute tw-top-0 tw-w-full tw-h-full tw-flex tw-flex-col tw-justify-between tw-p-1 tw-pr-2 tw-pt-2 tw-pb-2 tw-z-50">
                         <div className="tw-flex tw-justify-between tw-items-center">
@@ -51,7 +56,7 @@ const PictureView = ({ picture, className }: { picture: Picture; className: stri
                                     type="button"
                                     onClick={e => {
                                         e.stopPropagation();
-                                        deletePic(picture);
+                                        deletePic(picture.id);
                                     }}
                                     className="tw-bg-white tw-p-2 tw-opacity-70 tw-hover:opacity-100 tw-font-bold tw-text-black tw-text-base tw-rounded-3xl hover:tw-shadow-md tw-outline-none"
                                 >
@@ -64,6 +69,6 @@ const PictureView = ({ picture, className }: { picture: Picture; className: stri
             </div>
         </div>
     );
-};
+});
 
 export default PictureView;

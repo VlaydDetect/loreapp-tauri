@@ -1,7 +1,8 @@
 use crate::context::ApplicationContext;
-use crate::model::{Document, DocumentForCreate, ModelStoreState, PictureForCreate};
-use crate::model::Result;
+use crate::model::{Document, DocumentForCreate, DocumentType, ModelStoreState, PictureForCreate};
+use crate::model::{DocumentFilter, Result};
 use crate::prelude::f;
+use surreal_qb::filter::finalize_list_options;
 
 use super::ModelStore;
 
@@ -13,6 +14,7 @@ pub async fn seed_store_for_dev(app_context: &ApplicationContext) -> Result<()> 
             k,
             DocumentForCreate {
                 title: f!("Document {k}"),
+                r#type: DocumentType::default(),
             },
         )
     });
@@ -38,6 +40,11 @@ pub async fn seed_store_for_dev(app_context: &ApplicationContext) -> Result<()> 
         //         .await?;
         // }
     }
+
+    let _ = model_manager
+        .store()
+        .exec_select::<DocumentFilter>("document", None, finalize_list_options(None)?)
+        .await?;
 
     Ok(())
 }

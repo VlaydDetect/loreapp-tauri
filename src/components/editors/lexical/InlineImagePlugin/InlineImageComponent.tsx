@@ -1,13 +1,15 @@
-/**
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- */
-import type {Position} from './InlineImageNode';
-import {$isInlineImageNode, InlineImageNode} from './InlineImageNode';
-import type {GridSelection, LexicalEditor, NodeKey, NodeSelection, RangeSelection,} from 'lexical';
+import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+
+import type { BaseSelection, LexicalEditor, NodeKey } from 'lexical';
+import './InlineImageNode.css';
+
+import { AutoFocusPlugin } from '@lexical/react/LexicalAutoFocusPlugin';
+import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
+import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
+import { LexicalNestedComposer } from '@lexical/react/LexicalNestedComposer';
+import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
+import { useLexicalNodeSelection } from '@lexical/react/useLexicalNodeSelection';
+import { mergeRegister } from '@lexical/utils';
 import {
     $getNodeByKey,
     $getSelection,
@@ -23,34 +25,22 @@ import {
     SELECTION_CHANGE_COMMAND,
 } from 'lexical';
 
-import './InlineImageNode.css';
-
-import {AutoFocusPlugin} from '@lexical/react/LexicalAutoFocusPlugin';
-import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
-import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
-import {LexicalNestedComposer} from '@lexical/react/LexicalNestedComposer';
-import {RichTextPlugin} from '@lexical/react/LexicalRichTextPlugin';
-import {useLexicalNodeSelection} from '@lexical/react/useLexicalNodeSelection';
-import {mergeRegister} from '@lexical/utils';
-import * as React from 'react';
-import {Suspense, useCallback, useEffect, useRef, useState} from 'react';
-
 import useModal from '../hooks/useModal';
-import FloatingLinkEditorPlugin from '..//FloatingLinkEditorPlugin/index';
+import type { Position } from './InlineImageNode';
 import FloatingTextFormatToolbarPlugin from '../FloatingTextFormatToolbarPlugin/index';
-import LinkPlugin from '../LinkPlugin';
 import Button from '../ui/Button';
 import ContentEditable from '../ui/ContentEditable';
-import {DialogActions} from '../ui/Dialog';
+import { DialogActions } from '../ui/Dialog';
 import Placeholder from '../ui/Placeholder';
 import Select from '../ui/Select';
 import TextInput from '../ui/TextInput';
+import { $isInlineImageNode, InlineImageNode } from './InlineImageNode';
 
 const imageCache = new Set();
 
 function useSuspenseImage(src: string) {
     if (!imageCache.has(src)) {
-        throw new Promise((resolve) => {
+        throw new Promise(resolve => {
             const img = new Image();
             img.src = src;
             img.onload = () => {
@@ -61,17 +51,23 @@ function useSuspenseImage(src: string) {
     }
 }
 
-interface ILazyImageProps {
+function LazyImage({
+    altText,
+    className,
+    imageRef,
+    src,
+    width,
+    height,
+    position,
+}: {
     altText: string;
     className: string | null;
     height: 'inherit' | number;
-    imageRef: {current: null | HTMLImageElement};
+    imageRef: { current: null | HTMLImageElement };
     src: string;
     width: 'inherit' | number;
     position: Position;
-}
-
-function LazyImage({altText, className, imageRef, src, width, height, position}: ILazyImageProps) {
+}): JSX.Element {
     useSuspenseImage(src);
     return (
         <img
@@ -90,17 +86,17 @@ function LazyImage({altText, className, imageRef, src, width, height, position}:
     );
 }
 
-interface IDialogProps {
+export function UpdateInlineImageDialog({
+    activeEditor,
+    nodeKey,
+    onClose,
+}: {
     activeEditor: LexicalEditor;
     nodeKey: NodeKey;
     onClose: () => void;
-}
-
-export function UpdateInlineImageDialog({activeEditor, nodeKey, onClose,}: IDialogProps) {
+}): JSX.Element {
     const editorState = activeEditor.getEditorState();
-    const node = editorState.read(
-        () => $getNodeByKey(nodeKey) as InlineImageNode,
-    );
+    const node = editorState.read(() => $getNodeByKey(nodeKey) as InlineImageNode);
     const [altText, setAltText] = useState(node.getAltText());
     const [showCaption, setShowCaption] = useState(node.getShowCaption());
     const [position, setPosition] = useState<Position>(node.getPosition());
@@ -114,7 +110,7 @@ export function UpdateInlineImageDialog({activeEditor, nodeKey, onClose,}: IDial
     };
 
     const handleOnConfirm = () => {
-        const payload = {altText, position, showCaption};
+        const payload = { altText, position, showCaption };
         if (node) {
             activeEditor.update(() => {
                 node.update(payload);
@@ -125,7 +121,7 @@ export function UpdateInlineImageDialog({activeEditor, nodeKey, onClose,}: IDial
 
     return (
         <>
-            <div style={{marginBottom: '1em'}}>
+            <div style={{ marginBottom: '1em' }}>
                 <TextInput
                     label="Alt Text"
                     placeholder="Descriptive alternative text"
@@ -136,12 +132,13 @@ export function UpdateInlineImageDialog({activeEditor, nodeKey, onClose,}: IDial
             </div>
 
             <Select
-                style={{marginBottom: '1em', width: '208px'}}
+                style={{ marginBottom: '1em', width: '208px' }}
                 value={position}
                 label="Position"
                 name="position"
                 id="position-select"
-                onChange={handlePositionChange}>
+                onChange={handlePositionChange}
+            >
                 <option value="left">Left</option>
                 <option value="right">Right</option>
                 <option value="full">Full Width</option>
@@ -160,7 +157,8 @@ export function UpdateInlineImageDialog({activeEditor, nodeKey, onClose,}: IDial
             <DialogActions>
                 <Button
                     data-test-id="image-modal-file-upload-btn"
-                    onClick={() => handleOnConfirm()}>
+                    onClick={() => handleOnConfirm()}
+                >
                     Confirm
                 </Button>
             </DialogActions>
@@ -168,7 +166,16 @@ export function UpdateInlineImageDialog({activeEditor, nodeKey, onClose,}: IDial
     );
 }
 
-interface IInlineImageProps {
+export default function InlineImageComponent({
+    src,
+    altText,
+    nodeKey,
+    width,
+    height,
+    showCaption,
+    caption,
+    position,
+}: {
     altText: string;
     caption: LexicalEditor;
     height: 'inherit' | number;
@@ -177,15 +184,13 @@ interface IInlineImageProps {
     src: string;
     width: 'inherit' | number;
     position: Position;
-}
-
-export default function InlineImageComponent({src, altText, nodeKey, width, height, showCaption, caption, position,}: IInlineImageProps) {
+}): JSX.Element {
     const [modal, showModal] = useModal();
     const imageRef = useRef<null | HTMLImageElement>(null);
     const buttonRef = useRef<HTMLButtonElement | null>(null);
     const [isSelected, setSelected, clearSelection] = useLexicalNodeSelection(nodeKey);
     const [editor] = useLexicalComposerContext();
-    const [selection, setSelection] = useState<RangeSelection | NodeSelection | GridSelection | null>(null);
+    const [selection, setSelection] = useState<BaseSelection | null>(null);
     const activeEditorRef = useRef<LexicalEditor | null>(null);
 
     const onDelete = useCallback(
@@ -196,6 +201,7 @@ export default function InlineImageComponent({src, altText, nodeKey, width, heig
                 const node = $getNodeByKey(nodeKey);
                 if ($isInlineImageNode(node)) {
                     node.remove();
+                    return true;
                 }
             }
             return false;
@@ -218,10 +224,8 @@ export default function InlineImageComponent({src, altText, nodeKey, width, heig
                     event.preventDefault();
                     caption.focus();
                     return true;
-                } else if (
-                    buttonElem !== null &&
-                    buttonElem !== document.activeElement
-                ) {
+                }
+                if (buttonElem !== null && buttonElem !== document.activeElement) {
                     event.preventDefault();
                     buttonElem.focus();
                     return true;
@@ -234,10 +238,7 @@ export default function InlineImageComponent({src, altText, nodeKey, width, heig
 
     const onEscape = useCallback(
         (event: KeyboardEvent) => {
-            if (
-                activeEditorRef.current === caption ||
-                buttonRef.current === event.target
-            ) {
+            if (activeEditorRef.current === caption || buttonRef.current === event.target) {
                 $setSelection(null);
                 editor.update(() => {
                     setSelected(true);
@@ -256,7 +257,7 @@ export default function InlineImageComponent({src, altText, nodeKey, width, heig
     useEffect(() => {
         let isMounted = true;
         const unregister = mergeRegister(
-            editor.registerUpdateListener(({editorState}) => {
+            editor.registerUpdateListener(({ editorState }) => {
                 if (isMounted) {
                     setSelection(editorState.read(() => $getSelection()));
                 }
@@ -271,7 +272,7 @@ export default function InlineImageComponent({src, altText, nodeKey, width, heig
             ),
             editor.registerCommand<MouseEvent>(
                 CLICK_COMMAND,
-                (payload) => {
+                payload => {
                     const event = payload;
                     if (event.target === imageRef.current) {
                         if (event.shiftKey) {
@@ -289,7 +290,7 @@ export default function InlineImageComponent({src, altText, nodeKey, width, heig
             ),
             editor.registerCommand(
                 DRAGSTART_COMMAND,
-                (event) => {
+                event => {
                     if (event.target === imageRef.current) {
                         // TODO This is just a temporary workaround for FF to behave like other browsers.
                         // Ideally, this handles drag & drop too (and all browsers).
@@ -300,39 +301,26 @@ export default function InlineImageComponent({src, altText, nodeKey, width, heig
                 },
                 COMMAND_PRIORITY_LOW,
             ),
-            editor.registerCommand(
-                KEY_DELETE_COMMAND,
-                onDelete,
-                COMMAND_PRIORITY_LOW,
-            ),
-            editor.registerCommand(
-                KEY_BACKSPACE_COMMAND,
-                onDelete,
-                COMMAND_PRIORITY_LOW,
-            ),
+            editor.registerCommand(KEY_DELETE_COMMAND, onDelete, COMMAND_PRIORITY_LOW),
+            editor.registerCommand(KEY_BACKSPACE_COMMAND, onDelete, COMMAND_PRIORITY_LOW),
             editor.registerCommand(KEY_ENTER_COMMAND, onEnter, COMMAND_PRIORITY_LOW),
-            editor.registerCommand(
-                KEY_ESCAPE_COMMAND,
-                onEscape,
-                COMMAND_PRIORITY_LOW,
-            ),
+            editor.registerCommand(KEY_ESCAPE_COMMAND, onEscape, COMMAND_PRIORITY_LOW),
         );
         return () => {
             isMounted = false;
             unregister();
         };
-    }, [
-        clearSelection,
-        editor,
-        isSelected,
-        nodeKey,
-        onDelete,
-        onEnter,
-        onEscape,
-        setSelected,
-    ]);
+    }, [clearSelection, editor, isSelected, nodeKey, onDelete, onEnter, onEscape, setSelected]);
+
+    const handleClick = () => {
+        showModal('Update Inline Image', onClose => (
+            <UpdateInlineImageDialog activeEditor={editor} nodeKey={nodeKey} onClose={onClose} />
+        ));
+    };
 
     const draggable = isSelected && $isNodeSelection(selection);
+    const isFocused = isSelected;
+
     return (
         <Suspense fallback={null}>
             <>
@@ -340,20 +328,13 @@ export default function InlineImageComponent({src, altText, nodeKey, width, heig
                     <button
                         className="image-edit-button"
                         ref={buttonRef}
-                        onClick={() => {
-                            showModal('Update Inline Image', (onClose) => (
-                                <UpdateInlineImageDialog
-                                    activeEditor={editor}
-                                    nodeKey={nodeKey}
-                                    onClose={onClose}
-                                />
-                            ));
-                        }}>
+                        onClick={() => handleClick()}
+                    >
                         Edit
                     </button>
                     <LazyImage
                         className={
-                            isSelected
+                            isFocused
                                 ? `focused ${$isNodeSelection(selection) ? 'draggable' : ''}`
                                 : null
                         }
@@ -369,8 +350,6 @@ export default function InlineImageComponent({src, altText, nodeKey, width, heig
                     <div className="image-caption-container">
                         <LexicalNestedComposer initialEditor={caption}>
                             <AutoFocusPlugin />
-                            <LinkPlugin />
-                            <FloatingLinkEditorPlugin />
                             <FloatingTextFormatToolbarPlugin />
                             <RichTextPlugin
                                 contentEditable={

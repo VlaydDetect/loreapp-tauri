@@ -1,8 +1,9 @@
+import type {Config} from 'tailwindcss';
+
 import tailwindcssAnimatePlugin from 'tailwindcss-animate';
 import tailwindScrollbarHidePlugin from 'tailwind-scrollbar-hide';
 import tailwindcssScrollbarPlugin from '@gradin/tailwindcss-scrollbar';
 
-/** @type {import('tailwindcss').Config} */
 export default {
     darkMode: ['class'],
     mode: "jit",
@@ -225,4 +226,4 @@ export default {
         tailwindScrollbarHidePlugin,
         tailwindcssAnimatePlugin,
     ],
-}
+} satisfies Config;

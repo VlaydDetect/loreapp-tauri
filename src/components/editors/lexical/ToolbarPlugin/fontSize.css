@@ -1,4 +1,5 @@
 .font-size-input {
+    background: transparent;
     font-weight: bold;
     font-size: 14px;
     color: #777;
@@ -8,7 +9,7 @@
     margin-top: 5px;
     padding: 2px 4px;
     text-align: center;
-    width: 20px;
+    width: 30px;
 }
 
 input[type='number']::-webkit-outer-spin-button,
@@ -22,13 +23,13 @@ input[type='number'] {
 }
 
 .add-icon {
-    background-image: url('../../images/icons/add-sign.svg');
+    background-image: url('/icons/add-sign.svg');
     background-repeat: no-repeat;
     background-position: center;
 }
 
 .minus-icon {
-    background-image: url('../../images/icons/minus-sign.svg');
+    background-image: url('/icons/minus-sign.svg');
     background-repeat: no-repeat;
     background-position: center;
 }

@@ -8,8 +8,7 @@
     left: 0;
     z-index: 10;
     opacity: 0;
-    background-color: #fff;
-    box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 5px 10px rgb(0 0 0 / 0.3);
     border-radius: 8px;
     transition: opacity 0.5s;
     height: 35px;
@@ -36,7 +35,6 @@
 
 .floating-text-format-popup button.popup-item i.format {
     background-size: contain;
-    display: inline-block;
     height: 18px;
     width: 18px;
     margin-top: 2px;
@@ -50,7 +48,7 @@
 }
 
 .floating-text-format-popup button.popup-item.active {
-    background-color: rgba(223, 232, 250, 0.3);
+    background-color: rgb(223 232 250 / 0.3);
 }
 
 .floating-text-format-popup button.popup-item.active i {
@@ -68,8 +66,7 @@
     border-radius: 10px;
     padding: 8px;
     vertical-align: middle;
-    -webkit-appearance: none;
-    -moz-appearance: none;
+    appearance: none;
     width: 70px;
     font-size: 14px;
     color: #777;
@@ -84,7 +81,6 @@
 .floating-text-format-popup .popup-item .text {
     display: flex;
     line-height: 20px;
-    width: 200px;
     vertical-align: middle;
     font-size: 14px;
     color: #777;
@@ -130,7 +126,7 @@
 }
 
 @media (max-width: 1024px) {
-    .floating-text-format-popup {
+    .floating-text-format-popup button.insert-comment {
         display: none;
     }
 }

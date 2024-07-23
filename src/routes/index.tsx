@@ -1,11 +1,7 @@
-import React, { useEffect } from 'react';
-import { createFileRoute, useNavigate, Outlet } from '@tanstack/react-router';
-import { useTabsContext } from '@/context/TabsProvider';
+import React from 'react';
+import { createFileRoute, Outlet } from '@tanstack/react-router';
 
-const Index: React.FC = () => {
-    return <Outlet />;
-    // return null;
-};
+const Index: React.FC = () => <Outlet />;
 
 export const Route = createFileRoute('/')({
     component: Index,

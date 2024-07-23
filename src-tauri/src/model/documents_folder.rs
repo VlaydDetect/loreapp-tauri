@@ -1,26 +1,29 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use serde::{Serialize, Serializer};
 use serde::ser::SerializeStruct;
+use serde::{Deserialize, Serialize};
 use serde_with_macros::skip_serializing_none;
-use surreal_qb::filter::{FilterNodes, finalize_list_options, ListOptions, OpValsString};
+use surreal_qb::filter::{finalize_list_options, FilterNodes, ListOptions, OpValsString};
 use surrealdb::sql::{Datetime, Object, Value};
-use ts_rs::TS;
+use ts_gen::TS;
 
-use crate::model::{DocumentBmc, Error, get_parent_id, Result};
-use crate::model::{Document, DocumentFilter, vmap};
-use crate::model::bmc_base::{Bmc, bmc_create, bmc_custom_multi_query, bmc_custom_solo_query, bmc_delete, bmc_get, bmc_list, bmc_update};
+use crate::model::bmc_base::{
+    bmc_create, bmc_custom_multi_query, bmc_custom_solo_query, bmc_delete, bmc_get, bmc_list,
+    bmc_update, Bmc,
+};
 use crate::model::bmc_graph::{bmc_delete_edge, bmc_relate, bmc_rerelate_edge, GraphBmc};
 use crate::model::ctx::Ctx;
-use crate::model::store::{Creatable, Filterable, Patchable, vec_to_surreal_value};
+use crate::model::store::{vec_to_surreal_value, Creatable, Filterable, Patchable};
+use crate::model::{get_parent_id, DocumentBmc, Error, Result};
+use crate::model::{vmap, Document, DocumentFilter};
 use crate::prelude::f;
 
 use super::store::x_take::XTake;
 
 //#region ---------- Documents Folder -------------
 #[derive(Debug, Serialize, Deserialize, Default, TS, Clone)]
-#[ts(export, export_to = "../src/interface/")]
+#[ts(export)]
 pub struct DocumentsFolder {
     pub id: String,
     pub ctime: String,
@@ -103,33 +106,29 @@ impl TryFrom<Object> for DocumentsFolderWithParent {
 }
 
 #[derive(Debug, Serialize, Deserialize, TS, Clone, PartialEq)]
-#[ts(export, export_to = "../src/interface/")]
+#[ts(export)]
 pub enum DocumentsFolderChild {
     Document(Document),
-    DocumentsFolder(DocumentsFolderNode)
+    DocumentsFolder(DocumentsFolderNode),
 }
 
 #[derive(Debug, Serialize, Deserialize, Default, TS, Clone, PartialEq)]
-#[ts(export, export_to = "../src/interface/")]
+#[ts(export)]
 pub struct DocumentsFolderNode {
     pub id: String,
     pub ctime: String,
     pub name: String,
     // pub documents: Vec<Document>,
     // pub folders: Vec<DocumentsFolderNode>,
-    children: Vec<DocumentsFolderChild>
-    // TODO: Is it necessary?
-    // pub tags: Option<Vec<String>>,
-    // pub categories: Option<Vec<String>>,
+    children: Vec<DocumentsFolderChild>, // TODO: Is it necessary?
 }
 
 #[derive(Debug, Serialize, Default, TS, PartialEq)]
-#[ts(export, rename_all = "camelCase", export_to = "../src/interface/")]
-#[serde(rename_all = "camelCase")]
+#[ts(export)]
 pub struct DocumentsFolderTree {
     // root_folders: Vec<DocumentsFolderNode>,
     // root_documents: Vec<Document>,
-    roots: Vec<DocumentsFolderChild>
+    roots: Vec<DocumentsFolderChild>,
 }
 
 pub fn build_folders_tree(
@@ -156,7 +155,7 @@ pub fn build_folders_tree(
                     if let Some(find) = recursive_loop(folder, id) {
                         return Some(find);
                     }
-                },
+                }
                 _ => {}
             }
         }
@@ -198,7 +197,9 @@ pub fn build_folders_tree(
         if let Some(parent_id) = dwp.parent {
             if let Some(mut parent_node) = folders_map.remove(&parent_id) {
                 // parent_node.documents.push(dwp.document.clone());
-                parent_node.children.push(DocumentsFolderChild::Document(dwp.document.clone()));
+                parent_node
+                    .children
+                    .push(DocumentsFolderChild::Document(dwp.document.clone()));
                 folders_map.insert(parent_id, parent_node);
             }
         }
@@ -209,13 +210,17 @@ pub fn build_folders_tree(
             if let Some(child_node) = folders_map.remove(&dfwp.folder.id) {
                 if let Some(mut parent_node) = folders_map.remove(&parent_id) {
                     // parent_node.folders.push(child_node.clone());
-                    parent_node.children.push(DocumentsFolderChild::DocumentsFolder(child_node.clone()));
+                    parent_node
+                        .children
+                        .push(DocumentsFolderChild::DocumentsFolder(child_node.clone()));
                     folders_map.insert(parent_id, parent_node);
                 } else {
                     for (_, node) in folders_map.iter_mut() {
                         if let Some(parent_node) = recursive_loop(node, &parent_id) {
                             // parent_node.folders.push(child_node.clone());
-                            parent_node.children.push(DocumentsFolderChild::DocumentsFolder(child_node.clone()));
+                            parent_node
+                                .children
+                                .push(DocumentsFolderChild::DocumentsFolder(child_node.clone()));
                         }
                     }
                 }
@@ -236,13 +241,13 @@ pub fn build_folders_tree(
         }
     }
 
-    DocumentsFolderTree {
-        roots
-    }
+    println!("{roots:#?}");
+
+    DocumentsFolderTree { roots }
 }
 
 #[derive(Debug, Serialize, Deserialize, Default, TS)]
-#[ts(export, export_to = "../src/interface/")]
+#[ts(export)]
 pub struct DocumentsFolderForCreate {
     pub name: String,
 }
@@ -258,7 +263,7 @@ impl Creatable for DocumentsFolderForCreate {}
 
 #[skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, Default, TS)]
-#[ts(export, export_to = "../src/interface/")]
+#[ts(export)]
 pub struct DocumentsFolderForUpdate {
     pub name: Option<String>,
     pub documents: Option<Vec<String>>, // Use documents ids
@@ -311,10 +316,7 @@ impl DocumentsFolderBmc {
         bmc_get(ctx, Self::ENTITY, id).await
     }
 
-    pub async fn create(
-        ctx: Arc<Ctx>,
-        data: DocumentsFolderForCreate,
-    ) -> Result<DocumentsFolder> {
+    pub async fn create(ctx: Arc<Ctx>, data: DocumentsFolderForCreate) -> Result<DocumentsFolder> {
         bmc_create(ctx, Self::ENTITY, data).await
     }
 
@@ -348,7 +350,9 @@ impl DocumentsFolderBmc {
         END";
         let now = Datetime::default().to_string();
         let vars = vmap!("ctime".into() => now.into());
-        let result = bmc_custom_multi_query::<DocumentsFolder>(ctx, Self::ENTITY, sql, Some(vars.into())).await?;
+        let result =
+            bmc_custom_multi_query::<DocumentsFolder>(ctx, Self::ENTITY, sql, Some(vars.into()))
+                .await?;
 
         result
             .into_iter()
@@ -380,7 +384,7 @@ impl DocumentsFolderBmc {
         from_id: Option<&str>,
         to_id: Option<&str>,
     ) -> Result<DocumentsFolderTree> {
-        bmc_rerelate_edge::<DocumentsFolders>(
+        let df = bmc_rerelate_edge::<DocumentsFolders>(
             ctx.clone(),
             Self::RELATION_ENTITY,
             id,
@@ -388,61 +392,69 @@ impl DocumentsFolderBmc {
             to_id,
         )
         .await?;
+        println!("{df:?}");
         Self::list_tree(ctx).await
     }
 
     pub async fn list_tree(ctx: Arc<Ctx>) -> Result<DocumentsFolderTree> {
-        let mut sql = f!("SELECT *, <-{}<-documentsFolder.id AS parent FROM documentsFolder ORDER BY id ASC;", Self::RELATION_ENTITY).into_boxed_str();
+        let mut sql = f!(
+            "SELECT *, <-{}<-documentsFolder.id AS parent FROM documentsFolder ORDER BY id ASC;",
+            Self::RELATION_ENTITY
+        )
+        .into_boxed_str();
 
-        // let mut vars = vmap!["tb".into() => Self::ENTITY.into()];
-        let dfwps = bmc_custom_solo_query::<DocumentsFolderWithParent>(ctx.clone(), "", &sql, None).await?;
+        let dfwps =
+            bmc_custom_solo_query::<DocumentsFolderWithParent>(ctx.clone(), "", &sql, None).await?;
         println!("{dfwps:?}");
 
-        // vars = vmap!["tb".into() => DocumentBmc::ENTITY.into()];
-        sql = f!("SELECT *, <-{}<-document.id AS parent FROM document ORDER BY id ASC;", Self::RELATION_ENTITY).into_boxed_str();
+        sql = f!(
+            "SELECT *, <-{}<-documentsFolder.id AS parent FROM document ORDER BY id ASC;",
+            Self::RELATION_ENTITY
+        )
+        .into_boxed_str();
         let dwps = bmc_custom_solo_query::<DocumentWithParent>(ctx.clone(), "", &sql, None).await?;
         println!("{dwps:?}");
 
         let tree = build_folders_tree(dfwps, dwps);
         Ok(tree)
 
-    //     Ok(
-    //         DocumentsFolderTree {
-    //             roots: vec![
-    //                 DocumentsFolderChild::Document(Document {
-    //                     id: "document:d1".into(),
-    //                     title: "D1".into(),
-    //                     ctime: "".into(),
-    //                     body: None,
-    //                     tags: None,
-    //                     categories: None,
-    //                     used_pics: None,
-    //                 }),
-    //                 DocumentsFolderChild::DocumentsFolder(DocumentsFolderNode {
-    //                     id: "documentsFolder:df1".to_string(),
-    //                     ctime: "".to_string(),
-    //                     name: "DF1".to_string(),
-    //                     children: vec![
-    //                         DocumentsFolderChild::DocumentsFolder(DocumentsFolderNode {
-    //                             id: "documentsFolder:df2".to_string(),
-    //                             ctime: "".to_string(),
-    //                             name: "DF2".to_string(),
-    //                             children: vec![],
-    //                         }),
-    //                         DocumentsFolderChild::Document(Document {
-    //                             id: "document:d2".to_string(),
-    //                             ctime: "".to_string(),
-    //                             title: "D2".to_string(),
-    //                             body: None,
-    //                             tags: None,
-    //                             categories: None,
-    //                             used_pics: None,
-    //                         })
-    //                     ],
-    //                 })
-    //             ]
-    //         }
-    //     )
+        //     Ok(
+        //         DocumentsFolderTree {
+        //             roots: vec![
+        //                 DocumentsFolderChild::Document(Document {
+        //                     id: "document:d1".into(),
+        //                     title: "D1".into(),
+        //                     ctime: "".into(),
+        //                     body: None,
+        //                     tags: None,
+        //                     categories: None,
+        //                     used_pics: None,
+        //                 }),
+        //                 DocumentsFolderChild::DocumentsFolder(DocumentsFolderNode {
+        //                     id: "documentsFolder:df1".to_string(),
+        //                     ctime: "".to_string(),
+        //                     name: "DF1".to_string(),
+        //                     children: vec![
+        //                         DocumentsFolderChild::DocumentsFolder(DocumentsFolderNode {
+        //                             id: "documentsFolder:df2".to_string(),
+        //                             ctime: "".to_string(),
+        //                             name: "DF2".to_string(),
+        //                             children: vec![],
+        //                         }),
+        //                         DocumentsFolderChild::Document(Document {
+        //                             id: "document:d2".to_string(),
+        //                             ctime: "".to_string(),
+        //                             title: "D2".to_string(),
+        //                             body: None,
+        //                             tags: None,
+        //                             categories: None,
+        //                             used_pics: None,
+        //                         })
+        //                     ],
+        //                 })
+        //             ]
+        //         }
+        //     )
     }
 }
 //#endregion ---------- Documents Folder ----------

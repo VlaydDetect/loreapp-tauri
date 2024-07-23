@@ -1,22 +1,22 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { MantineProvider, Center, Loader, MantineThemeOverride } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { ModalsProvider } from '@mantine/modals';
 import TauriProvider from './TauriProvider';
 import TabsProvider from './TabsProvider';
+import { ThemeProvider } from './theme-provider';
 import { MobXContext } from '@/context/mobx-context';
 import RootMobxStore from '@/store/root-mobx-store';
 import ModalProvider from '@/context/ModalProvider';
 import { Toaster } from '@/components/ui/toaster';
+import { Toaster as SonnerToaster } from '@/components/ui/sonner';
 
 // TODO: add splashscreen when app is loading
-const Splashscreen = () => {
-    return (
-        <Center style={{ height: '100vh', width: '100vw' }}>
-            <Loader size="x1" />
-        </Center>
-    );
-};
+const Splashscreen = () => (
+    <Center style={{ height: '100vh', width: '100vw' }}>
+        <Loader size="x1" />
+    </Center>
+);
 
 export default function Providers({ children }: { children: React.ReactNode }) {
     // long tasks should use useState(true)
@@ -55,21 +55,26 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         },
     };
 
+    const rootStore = useMemo(() => new RootMobxStore(), []);
+
     return (
-        <MantineProvider theme={mantineTheme} withCssVariables>
-            <ModalsProvider>
-                <ModalProvider>
-                    <TabsProvider>
-                        <MobXContext.Provider value={new RootMobxStore()}>
-                            <TauriProvider>
-                                <Notifications />
-                                <Toaster />
-                                {isLoading ? <Splashscreen /> : children}
-                            </TauriProvider>
-                        </MobXContext.Provider>
-                    </TabsProvider>
-                </ModalProvider>
-            </ModalsProvider>
-        </MantineProvider>
+        <MobXContext.Provider value={rootStore}>
+            <ThemeProvider>
+                <MantineProvider theme={mantineTheme} withCssVariables>
+                    <ModalsProvider>
+                        <ModalProvider>
+                            <TabsProvider>
+                                <TauriProvider>
+                                    <Notifications />
+                                    <Toaster />
+                                    <SonnerToaster />
+                                    {isLoading ? <Splashscreen /> : children}
+                                </TauriProvider>
+                            </TabsProvider>
+                        </ModalProvider>
+                    </ModalsProvider>
+                </MantineProvider>
+            </ThemeProvider>
+        </MobXContext.Provider>
     );
 }

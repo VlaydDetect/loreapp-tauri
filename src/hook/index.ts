@@ -6,7 +6,6 @@ export * from './useInput';
 export * from './useOutside';
 export * from './useSelectors';
 export * from './useToggle';
-export * from './useContentNavigation';
 export * from './window';
 
 export * from './useForkRef';

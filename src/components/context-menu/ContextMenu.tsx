@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
-import { ContextMenuProps, ItemData, ItemProps, MENU_ID } from './types';
 import { Menu, Item, Separator, ItemParams } from 'react-contexify';
+import { ContextMenuProps, ItemData, ItemProps, MENU_ID } from './types';
 import 'react-contexify/dist/ReactContexify.css';
 
 const ContextMenu: React.FC<ContextMenuProps> = ({

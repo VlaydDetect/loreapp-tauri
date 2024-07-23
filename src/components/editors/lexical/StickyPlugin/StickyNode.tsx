@@ -16,12 +16,12 @@ import type {
     Spread,
 } from 'lexical';
 
-import {$setSelection, createEditor, DecoratorNode} from 'lexical';
+import { $setSelection, createEditor, DecoratorNode } from 'lexical';
 import * as React from 'react';
-import {Suspense} from 'react';
-import {createPortal} from 'react-dom';
+import { Suspense } from 'react';
+import { createPortal } from 'react-dom';
 
-const StickyComponent = React.lazy(() => import('./StickyComponent'),);
+const StickyComponent = React.lazy(() => import('./StickyComponent'));
 
 type StickyNoteColor = 'pink' | 'yellow';
 
@@ -46,13 +46,7 @@ export class StickyNode extends DecoratorNode<JSX.Element> {
     }
 
     static clone(node: StickyNode): StickyNode {
-        return new StickyNode(
-            node.__x,
-            node.__y,
-            node.__color,
-            node.__caption,
-            node.__key,
-        );
+        return new StickyNode(node.__x, node.__y, node.__color, node.__caption, node.__key);
     }
     static importJSON(serializedNode: SerializedStickyNode): StickyNode {
         const stickyNode = new StickyNode(
@@ -136,7 +130,7 @@ export class StickyNode extends DecoratorNode<JSX.Element> {
     }
 }
 
-export function $isStickyNode(node: LexicalNode | null | undefined,): node is StickyNode {
+export function $isStickyNode(node: LexicalNode | null | undefined): node is StickyNode {
     return node instanceof StickyNode;
 }
 

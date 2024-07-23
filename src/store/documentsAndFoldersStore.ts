@@ -110,7 +110,7 @@ class DocumentsAndFoldersStore {
     };
 
     createUnnamedFolder = async () => {
-        let newFolder = await docsFolderFmc.createUnnamed();
+        const newFolder = await docsFolderFmc.createUnnamed();
         await this.listTreeAsync();
         await this.listFoldersAsync();
 
@@ -198,10 +198,13 @@ class DocumentsAndFoldersStore {
 
     isFolder = (id: string): boolean => this.getItemType(id) === 'documentsFolder';
 
-    findParentFolder = (id: string): DocumentsFolderNode | undefined => {
+    // TODO: get DocumentFolderWithParent or DocumentWithParent by id
+    findParentFolder = (id: string): DocumentsFolderNode | Document | undefined => {
         if (this.tree.roots.length === 0) return undefined;
 
-        const findInChildren = (node: DocumentsFolderNode): DocumentsFolderNode | undefined => {
+        const findInChildren = (
+            node: DocumentsFolderNode,
+        ): DocumentsFolderNode | Document | undefined => {
             if (node.children.length === 0) return undefined;
 
             // eslint-disable-next-line no-restricted-syntax
@@ -211,6 +214,10 @@ class DocumentsAndFoldersStore {
 
                     const parent = findInChildren(child.DocumentsFolder);
                     if (parent) return child.DocumentsFolder;
+                }
+
+                if ('Document' in child) {
+                    if (child.Document.id === id) return child.Document;
                 }
             }
 

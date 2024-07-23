@@ -30,14 +30,19 @@ type Props = {
 
 function getIcon(props: AntdTreeNodeAttribute): React.ReactNode {
     const { isLeaf, expanded } = props;
-    if (isLeaf) {
-        return <File size={18} className="tw-text-gray-400" />;
-    }
-    return expanded ? (
-        <FolderOpen size={18} className="tw-text-gray-400" />
-    ) : (
-        <FolderClosed size={18} className="tw-text-gray-400" />
-    );
+
+    const icon = () => {
+        if (isLeaf) {
+            return <File size={18} className="tw-text-gray-400" />;
+        }
+        return expanded ? (
+            <FolderOpen size={18} className="tw-text-gray-400" />
+        ) : (
+            <FolderClosed size={18} className="tw-text-gray-400" />
+        );
+    };
+
+    return <span className="tw-flex tw-items-center tw-h-full">{icon()}</span>;
 }
 
 const DocumentsTree: React.FC<Props> = observer(({ documentDoubleClickHandler }) => {
@@ -115,16 +120,20 @@ const DocumentsTree: React.FC<Props> = observer(({ documentDoubleClickHandler })
         const title = node.title as string;
 
         return (
-            <RenameInput
-                name={title}
-                isRenaming={id === idToRename}
-                submitCallback={submitCallback}
-            />
+            <span className="tw-w-full tw-text-center">
+                <RenameInput
+                    name={title}
+                    isRenaming={id === idToRename}
+                    submitCallback={submitCallback}
+                    escapeCallback={() => setIdToRename(undefined)}
+                />
+            </span>
         );
     };
 
     const handleDrop: TreeProps['onDrop'] = event => {
         const { dragNode, node: dropNode } = event;
+        debugger;
         const parent = findParentFolder(dragNode.key as string);
 
         moveItemBetweenFolders(
@@ -151,8 +160,8 @@ const DocumentsTree: React.FC<Props> = observer(({ documentDoubleClickHandler })
 
     return (
         <div className="tw-h-full tw-w-full">
-            {/* TOPBAR */}
-            <div className="tw-flex tw-text-white-gray">
+            {/* TOOLBAR */}
+            <div className="tw-flex tw-text-white-gray tw-flex-row tw-items-center tw-justify-center tw-space-x-0.5">
                 <TooltipProvider>
                     <TooltipItem
                         trigger={
@@ -228,9 +237,9 @@ const DocumentsTree: React.FC<Props> = observer(({ documentDoubleClickHandler })
                     expandedKeys={expanded}
                     icon={getIcon}
                     blockNode
+                    selectable={false}
                     titleRender={titleRender}
                     onExpand={keys => setExpanded(keys)}
-                    selectable={false}
                     onRightClick={({ event, node }) => handleNodeContentMenu(event, node)}
                     draggable
                     onDrop={info => handleDrop(info)}

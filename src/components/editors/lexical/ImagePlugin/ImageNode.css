@@ -1,18 +1,9 @@
-/**
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- *
- */
-
 .ImageNode__contentEditable {
     min-height: 20px;
     border: 0;
     resize: none;
     cursor: text;
-    caret-color: rgb(5, 5, 5);
+    caret-color: rgb(5 5 5);
     display: block;
     position: relative;
     outline: 0;

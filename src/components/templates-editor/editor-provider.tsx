@@ -1,32 +1,6 @@
 import React, { createContext, Dispatch, useReducer } from 'react';
-import { EditorBtns } from './types';
-import { EditorAction } from './editor-actions';
-
-export type EditorElement = {
-    id: string;
-    styles: React.CSSProperties;
-    name: string;
-    type: EditorBtns;
-    content: EditorElement[] | {};
-};
-
-export type Editor = {
-    liveMode: boolean;
-    elements: EditorElement[];
-    selectedElement: EditorElement;
-    previewMode: boolean;
-    templateId: string;
-};
-
-export type HistoryState = {
-    history: Editor[];
-    currentIndex: number;
-};
-
-export type EditorState = {
-    editor: Editor;
-    history: HistoryState;
-};
+import { Editor, EditorState, HistoryState, EditorElement } from './types.ts';
+import { EditorAction } from './editor-actions.ts';
 
 const initialEditorState: Editor = {
     elements: [
@@ -332,11 +306,6 @@ const editorReducer = (state: EditorState = initialState, action: EditorAction):
     }
 };
 
-export type EditorContextData = {
-    previewMode: boolean;
-    setPreviewMode: (previewMode: boolean) => void;
-};
-
 export type EditorContextType = {
     state: EditorState;
     dispatch: Dispatch<EditorAction>;
@@ -355,5 +324,23 @@ type Props = {
 };
 
 const TemplatesEditorProvider: React.FC<Props> = ({ children, templateId }) => {
-    const [state, disparch] = useReducer(editorReducer, initialState);
+    const [state, dispatch] = useReducer(editorReducer, initialState);
+
+    return (
+        <EditorContext.Provider value={{ state, dispatch, templateId }}>
+            {children}
+        </EditorContext.Provider>
+    );
 };
+
+export const useTemplatesEditor = () => {
+    const context = React.useContext(EditorContext);
+
+    if (!context) {
+        throw new Error('useTemplatesEditor must be used within the templates editor provider');
+    }
+
+    return context;
+};
+
+export default TemplatesEditorProvider;

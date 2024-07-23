@@ -1,27 +1,24 @@
-import {ChangeEvent, Dispatch, SetStateAction, useState} from "react";
+import React, { ChangeEvent, useState } from 'react';
 
-type TInputValue = string | number | undefined;
-type TInputChangeEvent = ChangeEvent<HTMLInputElement>;
+type TChangeEvent = ChangeEvent<HTMLInputElement | HTMLTextAreaElement>;
 
-const convert = <I extends TInputValue>(from: I, value: string) => {
-    if (typeof from === 'string') {
-        return value
-    } else if (typeof from === 'number') {
-        return Number(value)
-    }
-    return ''
-}
+type InputReturn = {
+    value: string;
+    setValue: React.Dispatch<React.SetStateAction<string>>;
+    onChange: (e: TChangeEvent) => void;
+    reset: () => void;
+};
 
-export function useInput(initialValue: string | undefined): [string, Dispatch<SetStateAction<string>>, (e: TInputChangeEvent) => void, () => void] {
-    const [value, setValue] = useState<string>(initialValue ? initialValue : "")
+export function useInput(initialValue: string | undefined): InputReturn {
+    const [value, setValue] = useState<string>(initialValue || '');
 
     const reset = () => {
-        setValue(initialValue ? initialValue : "")
-    }
+        setValue(initialValue || '');
+    };
 
-    const onChange = (e: TInputChangeEvent) => {
-        setValue(e.target.value)
-    }
+    const onChange = (e: TChangeEvent) => {
+        setValue(e.target.value);
+    };
 
-    return [value, setValue, onChange, reset]
+    return { value, setValue, onChange, reset };
 }

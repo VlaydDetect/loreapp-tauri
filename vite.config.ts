@@ -2,6 +2,7 @@ import {defineConfig} from "vite";
 import {fileURLToPath, URL} from "url";
 import react from "@vitejs/plugin-react";
 import { TanStackRouterVite } from '@tanstack/router-vite-plugin'
+import path from "path";
 
 // https://vitejs.dev/config/
 /** @type {import('vite').UserConfig} */
@@ -15,6 +16,10 @@ export default defineConfig(async () => {
                     find: '@',
                     replacement: fileURLToPath(new URL('./src', import.meta.url))
                 },
+                {
+                    find: 'tailwind.config.ts',
+                    replacement: path.resolve(__dirname, 'tailwind.config.ts'),
+                }
             ]
         },
 
@@ -31,11 +36,16 @@ export default defineConfig(async () => {
 
         build: {
             // Tauri supports es2021
-            target: process.env.TAURI_PLATFORM == "windows" ? "chrome105" : "safari13",
+            target: process.env.TAURI_PLATFORM === "windows" ? "chrome105" : "safari13",
             // don't minify for debug builds
             minify: !process.env.TAURI_DEBUG ? 'esbuild' : false,
             // produce sourcemaps for debug builds
             sourcemap: !!process.env.TAURI_DEBUG,
+        },
+        optimizeDeps: {
+            include: [
+                path.resolve(__dirname, 'tailwind.config.ts'),
+            ]
         }
     }
 });

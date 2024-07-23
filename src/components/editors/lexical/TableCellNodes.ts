@@ -6,20 +6,19 @@
  *
  */
 
-import type {Klass, LexicalNode} from 'lexical';
+import type { Klass, LexicalNode } from 'lexical';
 
-import {CodeHighlightNode, CodeNode} from '@lexical/code';
-import {HashtagNode} from '@lexical/hashtag';
-import {AutoLinkNode, LinkNode} from '@lexical/link';
-import {ListItemNode, ListNode} from '@lexical/list';
-import {HeadingNode, QuoteNode} from '@lexical/rich-text';
+import { CodeHighlightNode, CodeNode } from '@lexical/code';
+import { HashtagNode } from '@lexical/hashtag';
+import { AutoLinkNode, LinkNode } from '@lexical/link';
+import { ListItemNode, ListNode } from '@lexical/list';
+import { HeadingNode, QuoteNode } from '@lexical/rich-text';
 
-import {AutocompleteNode} from './AutocompletePlugin/AutocompleteNode';
-import {EquationNode} from './EquationPlugin/EquationNode';
-import {ExcalidrawNode} from './ExcalidrawPlugin/node';
-import {ImageNode} from './ImagePlugin/ImageNode';
-import {KeywordNode} from './KeywordPlugin/KeywordNode';
-import {MentionNode} from './MentionPlugin/MentionNode';
+import { AutocompleteNode } from './AutocompletePlugin/AutocompleteNode';
+import { EquationNode } from './EquationPlugin/EquationNode';
+import { ExcalidrawNode } from './ExcalidrawPlugin/node';
+import { ImageNode } from './ImagePlugin/ImageNode';
+import { KeywordNode } from './KeywordPlugin/KeywordNode';
 
 const TableCellNodes: Array<Klass<LexicalNode>> = [
     HeadingNode,
@@ -32,7 +31,6 @@ const TableCellNodes: Array<Klass<LexicalNode>> = [
     AutoLinkNode,
     LinkNode,
     ImageNode,
-    MentionNode,
     ExcalidrawNode,
     EquationNode,
     AutocompleteNode,

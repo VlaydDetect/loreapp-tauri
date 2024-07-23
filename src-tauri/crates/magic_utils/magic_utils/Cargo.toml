@@ -2,5 +2,15 @@
 name = "magic_utils"
 version = "0.1.0"
 edition = "2021"
+authors = ["Vlayd Detect"]
 
 [dependencies]
+magic_utils_macros = { path = "../magic_utils_macros", optional = true, version = "0.1.0" }
+phf = { version = "0.11", features = ["macros"], optional = true }
+
+[dev-dependencies]
+magic_utils_macros = { path = "../magic_utils_macros", version = "0.1.0" }
+
+[features]
+default = ["derive"]
+derive = ["magic_utils_macros"]

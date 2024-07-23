@@ -1,26 +1,26 @@
-import React, {useEffect, useState} from "react";
+import React, { useEffect, useState } from 'react';
 
 interface ModalProviderProps {
-    children: React.ReactNode
+    children: React.ReactNode;
 }
 
 export type ModalData = {};
 
 type ModalContextType = {
-    data: ModalData,
-    isOpen: boolean,
-    setOpen: (modal: React.ReactNode, fetchData?: <T>() => Promise<T>) => void,
-    setClose: () => void,
+    data: ModalData;
+    isOpen: boolean;
+    setOpen: (modal: React.ReactNode, fetchData?: <T>() => Promise<T>) => void;
+    setClose: () => void;
 };
 
 export const ModalContent = React.createContext<ModalContextType>({
     data: {},
     isOpen: false,
-    setOpen: (modal, fetchData?) => {},
+    setOpen: (_modal, _fetchData?) => {},
     setClose: () => {},
 });
 
-const ModalProvider: React.FC<ModalProviderProps> = ({children}) => {
+const ModalProvider: React.FC<ModalProviderProps> = ({ children }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [data, setData] = useState<ModalData>({});
     const [showingModal, setShowingModal] = useState<React.ReactNode>(null);
@@ -33,27 +33,27 @@ const ModalProvider: React.FC<ModalProviderProps> = ({children}) => {
     const setOpen: ModalContextType['setOpen'] = async (modal, fetchData?) => {
         if (modal) {
             if (fetchData) {
-                setData({...data, ...(await fetchData())});
+                setData({ ...data, ...(await fetchData()) });
             }
             setShowingModal(modal);
             setIsOpen(true);
         }
-    }
+    };
 
     const setClose = () => {
         setIsOpen(false);
         setData({});
-    }
+    };
 
     if (!isMounted) return null;
 
     return (
-        <ModalContent.Provider value={{data, isOpen, setOpen, setClose}}>
+        <ModalContent.Provider value={{ data, isOpen, setOpen, setClose }}>
             {children}
             {showingModal}
         </ModalContent.Provider>
     );
-}
+};
 
 export const useModal = () => {
     const context = React.useContext(ModalContent);
@@ -63,6 +63,6 @@ export const useModal = () => {
     }
 
     return context;
-}
+};
 
 export default ModalProvider;

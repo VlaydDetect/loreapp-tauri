@@ -65,7 +65,7 @@ module.exports = {
                 'exceptions': ['-', '+']
             },
             'block': {
-                'markers': ['!'],
+                'markers': ['!', '*',],
                 'exceptions': ['*'],
                 'balanced': true
             }
@@ -78,7 +78,8 @@ module.exports = {
             'initialized': 'never',
             'uninitialized': 'consecutive'
         }],
-        'arrow-body-style': ['error', 'as-needed'],
+        // 'arrow-body-style': ['error', 'as-needed'],
+        'arrow-body-style': 'off',
         'object-shorthand': ['error', 'properties'],
 
         "import/prefer-default-export": "off",
@@ -88,7 +89,23 @@ module.exports = {
         '@typescript-eslint/no-unused-expressions': ['error', { 'allowShortCircuit': true, 'allowTernary': true }],
 
         'react/function-component-definition': 'off',
-
+        'class-methods-use-this': ['error', {
+            'exceptMethods': [
+                // Lexical Nodes Methods
+                'updateDOM',
+                'createDOM',
+                'exportDOM',
+                'isShadowRoot',
+                'canInsertTextBefore',
+                'canInsertTextAfter',
+                'isTextEntity',
+                'canBeEmpty'
+            ]
+        }],
+        '@typescript-eslint/no-unused-vars': ['error', { "argsIgnorePattern": "^_" }],
+        '@typescript-eslint/lines-between-class-members': 'off',
+        'no-cond-assign': ['error', 'except-parens'],
+        'react/style-prop-object': 'off',
 
 
 
@@ -130,7 +147,7 @@ module.exports = {
         'react/forbid-prop-types': 'off', // Too strict, no time for that, airbnb использует уведомление об ошибке
         'react/jsx-curly-brace-presence': 'off', // broken
         // Prefer <React.Fragment> over <>.
-        'react/jsx-fragments': ['error', 'element'],
+        'react/jsx-fragments': 'off',
         // Enforces premature optimization
         'react/jsx-no-bind': 'off',
         // We are a UI library.

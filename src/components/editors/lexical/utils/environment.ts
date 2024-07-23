@@ -6,7 +6,7 @@
  *
  */
 
-import {CAN_USE_DOM} from "@/utils/utils";
+import { CAN_USE_DOM } from '@/utils/utils';
 
 declare global {
     interface Document {
@@ -18,11 +18,7 @@ declare global {
     }
 }
 
-const documentMode =
-    CAN_USE_DOM && 'documentMode' in document ? document.documentMode : null;
-
-export const IS_FIREFOX: boolean =
-    CAN_USE_DOM && /^(?!.*Seamonkey)(?=.*Firefox).*/i.test(navigator.userAgent);
+const documentMode = CAN_USE_DOM && 'documentMode' in document ? document.documentMode : null;
 
 export const CAN_USE_BEFORE_INPUT: boolean =
     CAN_USE_DOM && 'InputEvent' in window && !documentMode
@@ -31,6 +27,4 @@ export const CAN_USE_BEFORE_INPUT: boolean =
 
 // Keep these in case we need to use them in the future.
 // export const IS_WINDOWS: boolean = CAN_USE_DOM && /Win/.test(navigator.platform);
-export const IS_CHROME: boolean =
-    CAN_USE_DOM && /^(?=.*Chrome).*/i.test(navigator.userAgent);
 // export const canUseTextInputEvent: boolean = CAN_USE_DOM && 'TextEvent' in window && !documentMode;

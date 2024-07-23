@@ -1,34 +1,25 @@
-/**
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- */
-
-import {AutoFocusPlugin} from '@lexical/react/LexicalAutoFocusPlugin';
-import {CharacterLimitPlugin} from '@lexical/react/LexicalCharacterLimitPlugin';
-import {CheckListPlugin} from '@lexical/react/LexicalCheckListPlugin';
-import {ClearEditorPlugin} from '@lexical/react/LexicalClearEditorPlugin';
+import React, { useEffect, useState } from 'react';
+import { AutoFocusPlugin } from '@lexical/react/LexicalAutoFocusPlugin';
+import { CharacterLimitPlugin } from '@lexical/react/LexicalCharacterLimitPlugin';
+import { CheckListPlugin } from '@lexical/react/LexicalCheckListPlugin';
+import { ClearEditorPlugin } from '@lexical/react/LexicalClearEditorPlugin';
 import LexicalClickableLinkPlugin from '@lexical/react/LexicalClickableLinkPlugin';
 import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
-import {HashtagPlugin} from '@lexical/react/LexicalHashtagPlugin';
-import {HistoryPlugin} from '@lexical/react/LexicalHistoryPlugin';
-import {HorizontalRulePlugin} from '@lexical/react/LexicalHorizontalRulePlugin';
-import {ListPlugin} from '@lexical/react/LexicalListPlugin';
-import {RichTextPlugin} from '@lexical/react/LexicalRichTextPlugin';
-import {TabIndentationPlugin} from '@lexical/react/LexicalTabIndentationPlugin';
-import {TablePlugin} from '@lexical/react/LexicalTablePlugin';
+import { HashtagPlugin } from '@lexical/react/LexicalHashtagPlugin';
+import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
+import { HorizontalRulePlugin } from '@lexical/react/LexicalHorizontalRulePlugin';
+import { ListPlugin } from '@lexical/react/LexicalListPlugin';
+import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
+import { TabIndentationPlugin } from '@lexical/react/LexicalTabIndentationPlugin';
+import { TablePlugin } from '@lexical/react/LexicalTablePlugin';
 import useLexicalEditable from '@lexical/react/useLexicalEditable';
-import * as React from 'react';
-import {useEffect, useState} from 'react';
-import {CAN_USE_DOM} from '@/utils/utils';
+import { CAN_USE_DOM } from '@/utils';
 
-import {useSharedHistoryContext} from './context/SharedHistoryContext';
-import TableCellNodes from './TableCellNodes';
+import { useSharedHistoryContext } from './context/SharedHistoryContext';
 import ActionsPlugin from './ActionsPlugin';
 import AutocompletePlugin from './AutocompletePlugin';
 import AutoLinkPlugin from './AutoLinkPlugin';
+import CodeActionMenuPlugin from './CodeActionMenuPlugin';
 import CodeHighlightPlugin from './CodeHighlightPlugin';
 import CollapsiblePlugin from './CollapsiblePlugin';
 import ComponentPickerPlugin from './ComponentPickerPlugin';
@@ -42,43 +33,39 @@ import FloatingTextFormatToolbarPlugin from './FloatingTextFormatToolbarPlugin';
 import ImagesPlugin from './ImagePlugin';
 import InlineImagePlugin from './InlineImagePlugin';
 import KeywordsPlugin from './KeywordPlugin';
+import { LayoutPlugin } from './LayoutPlugin/LayoutPlugin';
 import LinkPlugin from './LinkPlugin';
 import ListMaxIndentLevelPlugin from './ListMaxIndentLevelPlugin';
 import MarkdownShortcutPlugin from './MarkdownShortcutPlugin';
-import {MaxLengthPlugin} from './MaxLengthPlugin';
-import MentionsPlugin from './MentionPlugin';
+import { MaxLengthPlugin } from './MaxLengthPlugin';
 import PageBreakPlugin from './PageBreakPlugin';
 import SpeechToTextPlugin from './SpeechToTextPlugin';
 import TabFocusPlugin from './TabFocusPlugin';
 import TableCellActionMenuPlugin from './TableActionMenuPlugin';
 import TableCellResizer from './TableCellResizer';
-import TableOfContentsPlugin from './TableOfContentsPlugin';
-import {TablePlugin as NewTablePlugin} from './TablePlugin';
 import ToolbarPlugin from './ToolbarPlugin';
-import TreeViewPlugin from './TreeViewPlugin';
-import PlaygroundEditorTheme from './themes/BaseEditorTheme';
+// import TreeViewPlugin from './TreeViewPlugin';
 import ContentEditable from './ui/ContentEditable';
 import Placeholder from './ui/Placeholder';
+import { DEFAULT_SETTINGS } from './defaultSettings';
 
-export default function LexicalEditor() {
-    const {historyState} = useSharedHistoryContext();
-
-    const isAutocomplete = true;
-    const isMaxLength = false;
-    const isCharLimit = false;
-    const isCharLimitUtf8 = false;
-    const showTreeView = true;
-    const showTableOfContents = false;
-    const shouldUseLexicalContextMenu = true;
-    const tableCellMerge = true;
-    const tableCellBackgroundColor = true;
-
-
+const Editor = () => {
+    const { historyState } = useSharedHistoryContext();
+    const {
+        isAutocomplete,
+        isMaxLength,
+        isCharLimit,
+        isCharLimitUtf8,
+        shouldUseLexicalContextMenu,
+        tableCellMerge,
+        tableCellBackgroundColor,
+    } = DEFAULT_SETTINGS;
     const isEditable = useLexicalEditable();
     const text = 'Enter some rich text...';
     const placeholder = <Placeholder>{text}</Placeholder>;
     const [floatingAnchorElem, setFloatingAnchorElem] = useState<HTMLDivElement | null>(null);
     const [isSmallWidthViewport, setIsSmallWidthViewport] = useState<boolean>(false);
+    const [isLinkEditMode, setIsLinkEditMode] = useState<boolean>(false);
 
     const onRef = (_floatingAnchorElem: HTMLDivElement) => {
         if (_floatingAnchorElem !== null) {
@@ -86,18 +73,10 @@ export default function LexicalEditor() {
         }
     };
 
-    const cellEditorConfig = {
-        namespace: 'Playground',
-        nodes: [...TableCellNodes],
-        onError: (error: Error) => {
-            throw error;
-        },
-        theme: PlaygroundEditorTheme,
-    };
-
     useEffect(() => {
         const updateViewPortWidth = () => {
-            const isNextSmallWidthViewport = CAN_USE_DOM && window.matchMedia('(max-width: 1025px)').matches;
+            const isNextSmallWidthViewport =
+                CAN_USE_DOM && window.matchMedia('(max-width: 1025px)').matches;
 
             if (isNextSmallWidthViewport !== isSmallWidthViewport) {
                 setIsSmallWidthViewport(isNextSmallWidthViewport);
@@ -113,16 +92,16 @@ export default function LexicalEditor() {
 
     return (
         <>
-            <ToolbarPlugin />
+            <ToolbarPlugin setIsLinkEditMode={setIsLinkEditMode} />
             <div
-                className={`editor-container ${showTreeView ? 'tree-view' : ''}`}>
+                className={`tw-bg-white tw-relative tw-block tw-rounded-bl-[10px] tw-rounded-br-[10px]`}
+            >
                 {isMaxLength && <MaxLengthPlugin maxLength={30} />}
                 <DragDropPaste />
                 <AutoFocusPlugin />
                 <ClearEditorPlugin />
                 <ComponentPickerPlugin />
 
-                <MentionsPlugin />
                 <HashtagPlugin />
                 <KeywordsPlugin />
                 <SpeechToTextPlugin />
@@ -131,8 +110,11 @@ export default function LexicalEditor() {
                 <HistoryPlugin externalHistoryState={historyState} />
                 <RichTextPlugin
                     contentEditable={
-                        <div className="editor-scroller">
-                            <div className="editor" ref={onRef}>
+                        <div className="tw-min-h-[150px] tw-border-[0] tw-flex tw-relative tw-outline-0 tw-z-0 tw-overflow-auto tw-resize-y">
+                            <div
+                                className="tw-flex-auto tw-relative tw-resize-y tw-z-[-1]"
+                                ref={onRef}
+                            >
                                 <ContentEditable />
                             </div>
                         </div>
@@ -150,22 +132,6 @@ export default function LexicalEditor() {
                     hasCellBackgroundColor={tableCellBackgroundColor}
                 />
                 <TableCellResizer />
-                <NewTablePlugin cellEditorConfig={cellEditorConfig}>
-                    <AutoFocusPlugin />
-                    <RichTextPlugin
-                        contentEditable={
-                            <ContentEditable className="TableNode__contentEditable" />
-                        }
-                        placeholder={null}
-                        ErrorBoundary={LexicalErrorBoundary}
-                    />
-                    <MentionsPlugin />
-                    <HistoryPlugin />
-                    <ImagesPlugin captionsEnabled={false} />
-                    <LinkPlugin />
-                    <LexicalClickableLinkPlugin />
-                    <FloatingTextFormatToolbarPlugin />
-                </NewTablePlugin>
                 <ImagesPlugin />
                 <InlineImagePlugin />
                 <LinkPlugin />
@@ -177,17 +143,18 @@ export default function LexicalEditor() {
                 <TabIndentationPlugin />
                 <CollapsiblePlugin />
                 <PageBreakPlugin />
+                <LayoutPlugin />
                 {floatingAnchorElem && !isSmallWidthViewport && (
                     <>
                         <DraggableBlockPlugin anchorElem={floatingAnchorElem} />
-                        <FloatingLinkEditorPlugin anchorElem={floatingAnchorElem} />
-                        <TableCellActionMenuPlugin
+                        <CodeActionMenuPlugin anchorElem={floatingAnchorElem} />
+                        <FloatingLinkEditorPlugin
                             anchorElem={floatingAnchorElem}
-                            cellMerge={true}
+                            isLinkEditMode={isLinkEditMode}
+                            setIsLinkEditMode={setIsLinkEditMode}
                         />
-                        <FloatingTextFormatToolbarPlugin
-                            anchorElem={floatingAnchorElem}
-                        />
+                        <TableCellActionMenuPlugin anchorElem={floatingAnchorElem} cellMerge />
+                        <FloatingTextFormatToolbarPlugin anchorElem={floatingAnchorElem} />
                     </>
                 )}
 
@@ -198,11 +165,13 @@ export default function LexicalEditor() {
                     />
                 )}
                 {isAutocomplete && <AutocompletePlugin />}
-                <div>{showTableOfContents && <TableOfContentsPlugin />}</div>
                 {shouldUseLexicalContextMenu && <ContextMenuPlugin />}
-                <ActionsPlugin isRichText={true} />
+                <ActionsPlugin />
             </div>
-            {showTreeView && <TreeViewPlugin />}
+            {/* TO DEBUG */}
+            {/* {showTreeView && <TreeViewPlugin />} */}
         </>
     );
-}
+};
+
+export default Editor;

@@ -1,42 +1,40 @@
-use serde::{Deserialize, Serialize};
-use serde_diff::{SerdeDiff, Diff, Apply};
-use ts_rs::TS;
-use tauri;
-use std::{fs, path::PathBuf};
-use std::io::{Read, Write};
-use std::string::{String};
-use std::sync::{Arc};
 use crate::fs::{get_settings_path, get_user_path, path_to_string};
-use crate::Result as MainResult;
 use crate::utils::LabelValue;
+use crate::Result as MainResult;
+use serde::{Deserialize, Serialize};
+use serde_diff::{Apply, Diff, SerdeDiff};
+use std::io::{Read, Write};
+use std::string::String;
+use std::sync::Arc;
+use std::{fs, path::PathBuf};
+use tauri;
+use ts_gen::TS;
 
 //#region -------- Structs --------
 #[derive(TS, Serialize, Deserialize, PartialEq, SerdeDiff, Clone)]
-#[ts(export, rename_all="camelCase", export_to = "../src/interface/")]
-#[serde(rename_all = "camelCase")]
+#[ts(export)]
 pub enum EditorMode {
-    Normal
+    Normal,
 }
 
 #[derive(TS, Serialize, Deserialize, PartialEq, SerdeDiff, Clone)]
-#[ts(export, rename_all="camelCase", export_to = "../src/interface/")]
+#[ts(export, rename_all = "camelCase")]
 #[serde(rename_all = "camelCase")]
 pub struct EditorSettings {
     font_size: u16,
-    cursor_position: bool
+    cursor_position: bool,
 }
 
 #[derive(TS, Serialize, Deserialize, PartialEq, SerdeDiff, Clone)]
-#[ts(export, rename_all="camelCase", export_to = "../src/interface/")]
-#[serde(rename_all = "camelCase")]
+#[ts(export)]
 pub enum SortBy {
     Normal,
     CreateDate,
-    UpdateDate
+    UpdateDate,
 }
 
 #[derive(TS, Serialize, Deserialize, PartialEq, SerdeDiff, Clone)]
-#[ts(export, rename_all="camelCase", export_to = "../src/interface/")]
+#[ts(export, rename_all = "camelCase")]
 #[serde(rename_all = "camelCase")]
 pub struct AppSettings {
     pub editor_mode: EditorMode,
@@ -79,8 +77,8 @@ impl From<PathBuf> for AppSettings {
         match file {
             Ok(mut val) => {
                 val.read_to_string(&mut settings).unwrap();
-                return settings.into()
-            },
+                return settings.into();
+            }
             Err(_) => {
                 error!("fs ERROR: settings file not found");
                 AppSettings::default()
@@ -109,7 +107,7 @@ impl AppSettings {
         let file_content = fs::read(get_settings_path())?;
         match serde_json::from_slice::<Self>(&file_content) {
             Ok(val) => Ok(val),
-            Err(err) => Err(err.into())
+            Err(err) => Err(err.into()),
         }
     }
 }

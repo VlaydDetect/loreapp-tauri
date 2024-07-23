@@ -6,17 +6,9 @@
  *
  */
 
-import * as React from 'react';
-import {
-    createContext,
-    ReactNode,
-    useContext,
-    useEffect,
-    useMemo,
-    useState,
-} from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
-type Suggestion = null | string;
+type Suggestion = string | null;
 type CallbackFn = (newSuggestion: Suggestion) => void;
 type SubscribeFn = (callbackFn: CallbackFn) => () => void;
 type PublishFn = (newSuggestion: Suggestion) => void;
@@ -24,11 +16,11 @@ type ContextShape = [SubscribeFn, PublishFn];
 type HookShape = [suggestion: Suggestion, setSuggestion: PublishFn];
 
 const Context: React.Context<ContextShape> = createContext([
-    (_cb) => () => { return },
-    (_newSuggestion: Suggestion) => { return },
+    (_callbackFn: CallbackFn) => () => {},
+    (_newSuggestion: Suggestion) => {},
 ]);
 
-export const SharedAutocompleteContext = ({children,}: { children: ReactNode }) => {
+export const SharedAutocompleteContext = ({ children }: { children: React.ReactNode }) => {
     const context: ContextShape = useMemo(() => {
         let suggestion: Suggestion | null = null;
         const listeners: Set<CallbackFn> = new Set();
@@ -42,9 +34,7 @@ export const SharedAutocompleteContext = ({children,}: { children: ReactNode }) 
             },
             (newSuggestion: Suggestion) => {
                 suggestion = newSuggestion;
-                for (const listener of listeners) {
-                    listener(newSuggestion);
-                }
+                listeners.forEach(listener => listener(newSuggestion));
             },
         ];
     }, []);
@@ -54,10 +44,12 @@ export const SharedAutocompleteContext = ({children,}: { children: ReactNode }) 
 export const useSharedAutocompleteContext = (): HookShape => {
     const [subscribe, publish]: ContextShape = useContext(Context);
     const [suggestion, setSuggestion] = useState<Suggestion>(null);
-    useEffect(() => {
-        return subscribe((newSuggestion: Suggestion) => {
-            setSuggestion(newSuggestion);
-        });
-    }, [subscribe]);
+    useEffect(
+        () =>
+            subscribe((newSuggestion: Suggestion) => {
+                setSuggestion(newSuggestion);
+            }),
+        [subscribe],
+    );
     return [suggestion, publish];
 };

@@ -1,200 +1,178 @@
 import React, { useState } from 'react';
-import { Category, createLabelValue, Picture, PictureForUpdate, Tag } from '@/interface';
-import { MdDelete } from 'react-icons/md';
-import { useNavigate } from '@tanstack/react-router';
-import Selector from 'react-select';
-import makeAnimated from 'react-select/animated';
-import Spinner from '@/components/atom/Spinner';
-import { useInput, useMultiSelector } from '@/hook';
-import { picFmc } from '@/db';
-import { useModelEvents } from '@/event';
-import { useMobXStores } from '@/context/mobx-context';
 import { observer } from 'mobx-react-lite';
-
-const animatedSelector = makeAnimated();
+import { Trash } from 'lucide-react';
+import { Select, TreeSelect } from 'antd';
+import { useInput, useAntdSelect, useAntdTreeSelect } from '@/hook';
+import { useTabsContext, useMobXStores } from '@/context';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import type { LabelValue, Picture, PictureForUpdate } from '@/interface';
 
 export const PictureDetails = observer(({ picture }: { picture: Picture | undefined }) => {
-    const {
-        tagsAndCategoriesStore: {
-            categories,
-            setCategories,
-            categoriesAsOptions,
-            tags,
-            setTags,
-            tagsAsOptions,
-        },
-    } = useMobXStores();
-
+    // TODO: Error page
     if (!picture)
         return (
             <div>
-                <p>Whoops! The image cannot be loaded...</p>
+                <p>Whoops! The image cannot be loaded or does not exists...</p>
             </div>
         );
 
-    const [title, setTitle, onTitleChange] = useInput(picture.title);
-    const [description, setDescription, onDescriptionChange] = useInput(picture.desc);
-
-    useModelEvents<Category>({
-        topic: 'category',
-        exclude: ['create'],
-        idAttribute: 'id',
-        state: categories,
-        setState: setCategories,
-    });
-
-    useModelEvents<Tag>({
-        topic: 'tag',
-        exclude: ['create'],
-        idAttribute: 'id',
-        state: tags,
-        setState: setTags,
-    });
-
     const {
-        options: categoriesOptions,
-        values: categoriesValues,
-        onChangeValues: categoriesOnChange,
-    } = useMultiSelector({
-        options: categoriesAsOptions,
-        defaultValue: picture.categories ? picture.categories.map(c => createLabelValue(c)) : [],
+        tagsAndCategoriesStore: {
+            categoriesTreeAsSelectorTreeData,
+            categoriesToSelectorTreeData,
+            tagsAsSelectorOptions,
+            tagsToSelectorOption,
+            createTag,
+            tags,
+        },
+        picturesStore: { updatePicture, deletePicture },
+    } = useMobXStores();
+    const { redirectActiveTab } = useTabsContext();
+
+    const { value: name, onChange: onNameChange } = useInput(picture.name);
+    const { value: description, onChange: onDescriptionChange } = useInput(picture.desc);
+
+    const [categoriesTreeSelectorProps, categoriesSelectorValue] = useAntdTreeSelect({
+        treeData: categoriesTreeAsSelectorTreeData,
+        isMultiple: true,
+        isCheckable: true,
+        showSearch: true,
+        defaultValue: picture.categories ? categoriesToSelectorTreeData(picture.categories) : [],
+        showTreeLine: true,
     });
 
-    const {
-        options: tagsOptions,
-        values: tagsValues,
-        onChangeValues: tagsOnChange,
-    } = useMultiSelector({
-        options: tagsAsOptions,
-        defaultValue: picture.tags ? picture.tags.map(t => createLabelValue(t)) : [],
+    const [tagsSelectorProps, tagsSelectorValue] = useAntdSelect<LabelValue[], LabelValue>({
+        onCreate: async label => {
+            const newTag = await createTag({ name: label });
+            return { label: newTag.name, value: newTag.id };
+        },
+        defaultNewOptionName: `New Tag ${tags.length + 1}`,
+        options: tagsAsSelectorOptions,
+        defaultValue: picture.tags ? tagsToSelectorOption(picture.tags) : [],
+        showSearch: true,
+        mode: 'multipleWithCreation',
     });
 
     const [fields, setFields] = useState(false);
-    const [loading, setLoading] = useState(false);
-
-    const navigate = useNavigate();
 
     const savePicture = () => {
-        if (picture && title) {
-            setLoading(true);
-
+        if (picture && name) {
+            // TODO: find diff between old and new pictures, if there is no difference then don't call update
             const updatedPicture: PictureForUpdate = {
-                title,
+                name,
                 desc: description,
-                categories: categoriesValues.map(c => c.label),
-                tags: tagsValues.map(t => t.label),
+                categories: categoriesSelectorValue.map(c => c.value),
+                tags: tagsSelectorValue.map(t => t.value),
             };
 
-            picFmc.update(picture.id, updatedPicture).finally(() => {
-                setLoading(false);
-                // navigate('/gallery');
-            });
+            updatePicture(picture.id, updatedPicture);
+            redirectActiveTab('gallery');
         } else {
             setFields(true);
             setTimeout(() => setFields(false), 5000);
         }
     };
 
-    const deletePicture = () => {
-        // picFmc.delete(picture.id).finally(() => navigate('/gallery'));
-        picFmc.delete(picture.id);
+    const deletePic = async () => {
+        deletePicture(picture.id);
+        redirectActiveTab('gallery');
     };
 
-    if (loading) {
-        return <Spinner />;
-    }
-
     return (
-        <div className="tw-flex tw-flex-col tw-justify-center tw-items-center tw-mt-5 lg:tw-h-4/5">
-            {fields && (
-                <p className="tw-text-red-500 tw-mb-5 tw-text-xl tw-transition-all tw-duration-150 tw-ease-in">
-                    Please fill in all fields.
-                </p>
-            )}
-            <div className="tw-flex lg:tw-flex-row tw-flex-col tw-justify-center tw-items-center tw-bg-white lg:tw-p-5 tw-p-3 lg:tw-w-4/5 tw-w-full">
-                <div className="tw-bg-[#F0F0F0] tw-p-3 tw-flex tw-flex-[0.7] tw-w-full">
-                    <div className="tw-flex tw-justify-center tw-items-center tw-flex-col tw-border-2 tw-border-dotted tw-border-gray-300 tw-p-3 tw-w-full tw-h-[420]">
-                        {loading && <Spinner />}
-                        <div className="tw-relative tw-h-full">
-                            <img
-                                src={picture.img_path}
-                                alt="pic-img"
-                                className="tw-h-full tw-w-full"
+        <div className="tw-h-screen tw-w-screen tw-overflow-y-auto">
+            <section className="tw-relative tw-mt-5 tw-flex tw-h-fit tw-w-full tw-flex-col tw-items-center !tw-overflow-visible tw-rounded-md tw-antialiased">
+                <div className="tw-flex tw-flex-col">
+                    <h1 className="tw-text-center tw-text-3xl tw-text-cool-white">
+                        Picture Details
+                    </h1>
+                    {fields && (
+                        <p className="tw-text-center tw-text-xl tw-text-red-500 tw-transition-all tw-duration-150 tw-ease-in">
+                            Please fill in all fields.
+                        </p>
+                    )}
+                </div>
+            </section>
+            <section className="tw-relative tw-flex tw-h-fit tw-w-screen tw-flex-col tw-items-center !tw-overflow-visible tw-rounded-md tw-antialiased">
+                <div className="tw-relative">
+                    <img src={picture.path} alt="pic-img" />
+                    <Button
+                        type="button"
+                        variant="destructive"
+                        className="tw-absolute tw-bottom-3 tw-right-3 tw-cursor-pointer tw-rounded-full tw-p-3 tw-text-xl tw-outline-none tw-transition-all tw-duration-500 hover:tw-shadow-md"
+                        onClick={deletePic}
+                    >
+                        <Trash size={20} />
+                    </Button>
+                </div>
+            </section>
+            <section className="tw-relative tw-mb-14 tw-mt-5 tw-flex tw-h-fit tw-w-full tw-flex-col tw-items-center !tw-overflow-visible tw-rounded-md tw-antialiased">
+                <div className="tw-flex tw-h-fit tw-w-full tw-flex-col tw-items-center tw-space-y-6 tw-px-3">
+                    <div className="tw-grid tw-gap-1.5 tw-w-1/4">
+                        <Label htmlFor="title-input" className="tw-text-white">
+                            Picture Title
+                        </Label>
+                        <Input
+                            id="title-input"
+                            type="text"
+                            value={name}
+                            onChange={onNameChange}
+                            placeholder="Add your title here"
+                            className="tw-border-b-2 tw-border-gray-200 tw-bg-black/10 tw-p-2 tw-font-bold tw-outline-none"
+                        />
+                    </div>
+
+                    <div className="tw-grid tw-w-1/2 tw-gap-1.5">
+                        <Label htmlFor="picture-description" className="tw-text-white">
+                            Describe this picture
+                        </Label>
+                        <Textarea
+                            id="picture-description"
+                            value={description}
+                            onChange={onDescriptionChange}
+                            placeholder="Type to describe..."
+                            className="tw-border-b-2 tw-border-gray-200 tw-bg-black/10 tw-p-2 tw-text-base tw-text-white tw-outline-none"
+                        />
+                    </div>
+
+                    <div className="tw-flex tw-flex-col tw-w-1/3 tw-gap-6">
+                        <div className="tw-grid tw-gap-1.5">
+                            <Label htmlFor="categories-selector" className="tw-text-white">
+                                Choose picture categories
+                            </Label>
+                            <TreeSelect
+                                id="categories-selector"
+                                className="tw-rounded-md tw-text-base tw-text-black tw-outline-none tw-w-full"
+                                placeholder="Choose picture categories"
+                                {...categoriesTreeSelectorProps}
                             />
-                            <button
-                                type="button"
-                                className="tw-absolute tw-bottom-3 tw-right-3 tw-p-3 tw-rounded-full tw-bg-white tw-text-xl tw-cursor-pointer tw-outline-none hover:tw-shadow-md tw-transition-all tw-duration-500"
-                                onClick={() => deletePicture()}
-                            >
-                                <MdDelete />
-                            </button>
+                        </div>
+                        <div className="tw-grid tw-gap-1.5">
+                            <Label htmlFor="tags-selector" className="tw-text-white">
+                                Choose picture tags
+                            </Label>
+                            <Select
+                                id="tags-selector"
+                                className="tw-w-full tw-rounded-md tw-text-base tw-text-black tw-outline-none"
+                                placeholder="Choose picture tags"
+                                {...tagsSelectorProps}
+                            />
                         </div>
                     </div>
-                </div>
-            </div>
 
-            <div className="flex flex-1 flex-col gap-6 lg:pl-5 mt-5 w-full">
-                <input
-                    type="text"
-                    defaultValue={title}
-                    onChange={onTitleChange}
-                    placeholder="Add your title here"
-                    className="outline-none text-2xl sm:text-3xl font-bold border-b-2 border-gray-200 p-2"
-                />
-                <input
-                    type="text"
-                    defaultValue={description}
-                    onChange={onDescriptionChange}
-                    placeholder="Describe this picture"
-                    className="outline-none text-base sm:text-lg border-b-2 border-gray-200 p-2"
-                />
-                <div className="flex flex-col">
-                    <div>
-                        <p className="mb-2 font-semibold text-lg sm:text-xl">
-                            Choose picture categories
-                        </p>
-                        {/*TODO: add custom option with delete button*/}
-                        <Selector
-                            className="outline-none w-4/5 text-base p-2 rounded-md text-black"
-                            placeholder="Choose picture categories"
-                            closeMenuOnSelect={false}
-                            isMulti
-                            isSearchable
-                            isClearable
-                            components={animatedSelector}
-                            options={categoriesOptions}
-                            value={categoriesValues}
-                            onChange={categoriesOnChange}
-                            backspaceRemovesValue
-                        />
-                    </div>
-                    <div>
-                        <p className="mb-2 font-semibold text-lg sm:text-xl">Choose picture tags</p>
-                        <Selector
-                            className="outline-none w-4/5 text-base p-2 rounded-md text-black"
-                            placeholder="Choose picture tags"
-                            closeMenuOnSelect={false}
-                            isMulti
-                            isSearchable
-                            isClearable
-                            components={animatedSelector}
-                            options={tagsOptions}
-                            value={tagsValues}
-                            onChange={tagsOnChange}
-                            backspaceRemovesValue
-                        />
-                    </div>
-                    <div className="flex justify-end items-end mt-5">
-                        <button
+                    <div className="tw-flex tw-flex-col tw-items-end tw-justify-end tw-w-full">
+                        <Button
                             type="button"
                             onClick={savePicture}
-                            className="bg-green-500 text-white font-bold p-2 rounded-full w-[28] outline-none"
+                            className="tw-w-[28] tw-rounded-full tw-bg-green-500 tw-p-2 tw-font-bold tw-text-white tw-outline-none"
                         >
                             Save
-                        </button>
+                        </Button>
                     </div>
                 </div>
-            </div>
+            </section>
         </div>
     );
 });

@@ -31,6 +31,7 @@ const RootLayout: React.FC = () => {
     const {
         tagsAndCategoriesStore: { listTagsAndCategories },
         documentsAndFoldersStore: { listDocumentsAndFolders },
+        documentsTemplatesStore: { listTemplates },
     } = useMobXStores();
 
     useEffect(() => {
@@ -42,6 +43,7 @@ const RootLayout: React.FC = () => {
         initSettings();
         listTagsAndCategories();
         listDocumentsAndFolders();
+        listTemplates();
     }, []);
 
     //#region -------- Tauri events listener --------

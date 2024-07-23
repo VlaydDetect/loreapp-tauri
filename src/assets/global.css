@@ -1,21 +1,17 @@
-/* TAILWIND SETUP */
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-    /*APP VARS*/
     :root {
+        /* APP VARS */
         --titlebar-height: 40px;
         --toolbar-width: 40px;
 
         --left-sidebar-width: calc(300px - var(--toolbar-width));
         --right-sidebar-width: calc(300px - var(--toolbar-width));
-    }
 
-    /*SHADCN VARS*/
-    :root {
+        /* SHADCN UI VARS */
         --background: 0 0% 100%;
         --foreground: 222.2 84% 4.9%;
 
@@ -47,7 +43,7 @@
         --radius: 0.5rem;
     }
 
-    .dark {
+    .tw-dark {
         --background: 222.2 84% 4.9%;
         --foreground: 210 40% 98%;
 
@@ -78,7 +74,7 @@
     }
 
     @font-face {
-        font-family: 'Inter';
+        font-family: Inter;
         src: url('./fonts/Inter-SemiBold.ttf') format('ttf');
         font-weight: 400;
         font-display: swap;
@@ -86,7 +82,7 @@
     }
 
     @font-face {
-        font-family: 'Inter';
+        font-family: Inter;
         src: url('./fonts/Inter-Thin.ttf') format('ttf');
         font-weight: 400;
         font-display: swap;
@@ -94,7 +90,7 @@
     }
 
     @font-face {
-        font-family: 'Satoshi';
+        font-family: Satoshi;
         src:
             url('./fonts/Satoshi-Italic.woff2') format('woff2'),
             url('./fonts/Satoshi-Italic.woff') format('woff');
@@ -102,8 +98,9 @@
         font-display: swap;
         font-style: italic;
     }
+
     @font-face {
-        font-family: 'Satoshi';
+        font-family: Satoshi;
         src:
             url('./fonts/Satoshi-Black.woff2') format('woff2'),
             url('./fonts/Satoshi-Black.woff') format('woff');
@@ -139,9 +136,10 @@
 
     input,
     button {
-        color: #ffffff;
+        color: #fff;
         background-color: #0f0f0f98;
     }
+
     button:active {
         background-color: #0f0f0f69;
     }
@@ -149,7 +147,9 @@
 
 /* GLOBAL STYLES */
 
-* {
+*,
+*::before,
+*::after {
     box-sizing: border-box;
 }
 
@@ -158,15 +158,13 @@
     font-size: 16px;
     line-height: 24px;
     font-weight: 400;
-
     color: #0f0f0f;
     background-color: #f6f6f6;
-
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
 }
 
 body {
@@ -175,20 +173,44 @@ body {
     overflow: hidden;
 }
 
-/* SCROLLBAR */
+/* SCROLLBAR SETUP */
 
-::-webkit-scrollbar {
-    width: 10px;
+*::-webkit-scrollbar {
+    width: 7px !important;
+    height: 7px !important;
 }
 
-::-webkit-scrollbar-track {
-    background: #e0e0e0;
+*::-webkit-scrollbar-track {
+    @apply tw-h-screen tw-rounded-none !tw-bg-white-gray/50 tw-shadow-none;
 }
 
-::-webkit-scrollbar-track:hover {
-    background: #555;
+*::-webkit-scrollbar-thumb {
+    @apply tw-rounded-none !tw-bg-light-gray tw-shadow-none;
 }
 
-::-webkit-scrollbar-thumb {
-    background: #888;
+*::-webkit-scrollbar-thumb:hover {
+    @apply !tw-bg-light-gray/65;
+}
+
+/* CUSTOM STYLES */
+
+.bg-dot-pattern {
+    background-image: radial-gradient(rgb(35 40 68) 1px, transparent 1px);
+    background-size: 25px 25px;
+}
+
+.use-automation-zoom-in {
+    animation: automation-zoom-in 0.5s;
+}
+
+@keyframes automation-zoom-in {
+    0% {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
 }

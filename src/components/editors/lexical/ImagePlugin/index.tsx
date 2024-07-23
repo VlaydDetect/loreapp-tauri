@@ -1,12 +1,6 @@
-/**
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- */
-import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
-import {$wrapNodeInElement, mergeRegister} from '@lexical/utils';
+import React, { useEffect, useRef, useState } from 'react';
+import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
+import { $wrapNodeInElement, mergeRegister } from '@lexical/utils';
 import {
     $createParagraphNode,
     $createRangeSelection,
@@ -25,31 +19,29 @@ import {
     LexicalCommand,
     LexicalEditor,
 } from 'lexical';
-import {useEffect, useRef, useState} from 'react';
-import * as React from 'react';
-import {CAN_USE_DOM} from "@/utils/utils";
+import { CAN_USE_DOM } from '@/utils';
 
-import {
-    $createImageNode,
-    $isImageNode,
-    ImageNode,
-    ImagePayload,
-} from './ImageNode';
+// import landscapeImage from '../../images/landscape.jpg';
+// import yellowFlowerImage from '../../images/yellow-flower.jpg';
+import { $createImageNode, $isImageNode, ImageNode, ImagePayload } from './ImageNode';
 import Button from '../ui/Button';
-import {DialogActions, DialogButtonsList} from '../ui/Dialog';
+import { DialogActions, DialogButtonsList } from '../ui/Dialog';
 import FileInput from '../ui/FileInput';
 import TextInput from '../ui/TextInput';
-import GalleryInput from "../ui/GalleryInput";
-import {Picture} from "@/interface";
-import {readFileToDataUrl} from "@/fs/fs";
 
 export type InsertImagePayload = Readonly<ImagePayload>;
 
-const getDOMSelection = (targetWindow: Window | null): Selection | null => CAN_USE_DOM ? (targetWindow || window).getSelection() : null;
+const getDOMSelection = (targetWindow: Window | null): Selection | null =>
+    CAN_USE_DOM ? (targetWindow || window).getSelection() : null;
 
-export const INSERT_IMAGE_COMMAND: LexicalCommand<InsertImagePayload> = createCommand('INSERT_IMAGE_COMMAND');
+export const INSERT_IMAGE_COMMAND: LexicalCommand<InsertImagePayload> =
+    createCommand('INSERT_IMAGE_COMMAND');
 
-export function InsertImageUriDialogBody({onClick,}: { onClick: (payload: InsertImagePayload) => void }) {
+export function InsertImageUriDialogBody({
+    onClick,
+}: {
+    onClick: (payload: InsertImagePayload) => void;
+}) {
     const [src, setSrc] = useState('');
     const [altText, setAltText] = useState('');
 
@@ -75,7 +67,8 @@ export function InsertImageUriDialogBody({onClick,}: { onClick: (payload: Insert
                 <Button
                     data-test-id="image-modal-confirm-btn"
                     disabled={isDisabled}
-                    onClick={() => onClick({altText, src})}>
+                    onClick={() => onClick({ altText, src })}
+                >
                     Confirm
                 </Button>
             </DialogActions>
@@ -83,7 +76,11 @@ export function InsertImageUriDialogBody({onClick,}: { onClick: (payload: Insert
     );
 }
 
-export function InsertImageUploadedDialogBody({onClick}: { onClick: (payload: InsertImagePayload) => void }) {
+export function InsertImageUploadedDialogBody({
+    onClick,
+}: {
+    onClick: (payload: InsertImagePayload) => void;
+}) {
     const [src, setSrc] = useState('');
     const [altText, setAltText] = useState('');
 
@@ -93,7 +90,6 @@ export function InsertImageUploadedDialogBody({onClick}: { onClick: (payload: In
         const reader = new FileReader();
         reader.onload = function () {
             if (typeof reader.result === 'string') {
-                console.log(reader.result)
                 setSrc(reader.result);
             }
             return '';
@@ -122,7 +118,8 @@ export function InsertImageUploadedDialogBody({onClick}: { onClick: (payload: In
                 <Button
                     data-test-id="image-modal-file-upload-btn"
                     disabled={isDisabled}
-                    onClick={() => onClick({altText, src})}>
+                    onClick={() => onClick({ altText, src })}
+                >
                     Confirm
                 </Button>
             </DialogActions>
@@ -130,48 +127,14 @@ export function InsertImageUploadedDialogBody({onClick}: { onClick: (payload: In
     );
 }
 
-export function InsertImageFromGallery({onClick}: { onClick: (payload: InsertImagePayload) => void }) {
-    const [src, setSrc] = useState('');
-    const [altText, setAltText] = useState('');
-
-    const isDisabled = src === '';
-
-    const loadImage = (picture: Picture | null) => {
-
-        if (picture !== null) {
-            readFileToDataUrl(picture.img_path).then(data => {
-                console.log(data)
-                setSrc(data);
-            })
-        }
-    };
-
-    return (
-        <div className="grid grid-cols-2 gap-2">
-            <GalleryInput loadImage={loadImage} />
-            <div className="flex flex-col justify-center items-center">
-                <TextInput
-                    label="Alt Text"
-                    placeholder="Descriptive alternative text"
-                    onChange={setAltText}
-                    value={altText}
-                    data-test-id="image-modal-alt-text-input"
-                />
-                <DialogActions>
-                    <Button
-                        data-test-id="image-modal-file-upload-btn"
-                        disabled={isDisabled}
-                        onClick={() => onClick({altText, src})}>
-                        Confirm
-                    </Button>
-                </DialogActions>
-            </div>
-        </div>
-    );
-}
-
-export function InsertImageDialog({activeEditor, onClose}: { activeEditor: LexicalEditor; onClose: () => void }) {
-    const [mode, setMode] = useState<null | 'url' | 'file' | 'gallery'>(null);
+export function InsertImageDialog({
+    activeEditor,
+    onClose,
+}: {
+    activeEditor: LexicalEditor;
+    onClose: () => void;
+}): JSX.Element {
+    const [mode, setMode] = useState<null | 'url' | 'file'>(null);
     const hasModifier = useRef(false);
 
     useEffect(() => {
@@ -195,30 +158,45 @@ export function InsertImageDialog({activeEditor, onClose}: { activeEditor: Lexic
             {!mode && (
                 <DialogButtonsList>
                     <Button
-                        data-test-id="image-modal-option-url"
-                        onClick={() => setMode('url')}>
+                        data-test-id="image-modal-option-sample"
+                        onClick={() =>
+                            onClick(
+                                hasModifier.current
+                                    ? {
+                                          altText:
+                                              'Daylight fir trees forest glacier green high ice landscape',
+                                          // src: landscapeImage,
+                                          src: '', // TODO
+                                      }
+                                    : {
+                                          altText: 'Yellow flower in tilt shift lens',
+                                          // src: yellowFlowerImage,
+                                          src: '', // TODO
+                                      },
+                            )
+                        }
+                    >
+                        Sample
+                    </Button>
+                    <Button data-test-id="image-modal-option-url" onClick={() => setMode('url')}>
                         URL
                     </Button>
-                    <Button
-                        data-test-id="image-modal-option-file"
-                        onClick={() => setMode('file')}>
+                    <Button data-test-id="image-modal-option-file" onClick={() => setMode('file')}>
                         File
-                    </Button>
-                    <Button
-                        data-test-id="image-modal-option-file"
-                        onClick={() => setMode('gallery')}>
-                        From Gallery
                     </Button>
                 </DialogButtonsList>
             )}
             {mode === 'url' && <InsertImageUriDialogBody onClick={onClick} />}
             {mode === 'file' && <InsertImageUploadedDialogBody onClick={onClick} />}
-            {mode === 'gallery' && <InsertImageFromGallery onClick={onClick} />}
         </>
     );
 }
 
-export default function ImagesPlugin({captionsEnabled}: { captionsEnabled?: boolean }): JSX.Element | null {
+export default function ImagesPlugin({
+    captionsEnabled,
+}: {
+    captionsEnabled?: boolean;
+}): JSX.Element | null {
     const [editor] = useLexicalComposerContext();
 
     useEffect(() => {
@@ -229,7 +207,7 @@ export default function ImagesPlugin({captionsEnabled}: { captionsEnabled?: bool
         return mergeRegister(
             editor.registerCommand<InsertImagePayload>(
                 INSERT_IMAGE_COMMAND,
-                (payload) => {
+                payload => {
                     const imageNode = $createImageNode(payload);
                     $insertNodes([imageNode]);
                     if ($isRootOrShadowRoot(imageNode.getParentOrThrow())) {
@@ -242,21 +220,21 @@ export default function ImagesPlugin({captionsEnabled}: { captionsEnabled?: bool
             ),
             editor.registerCommand<DragEvent>(
                 DRAGSTART_COMMAND,
-                (event) => {
+                event => {
                     return onDragStart(event);
                 },
                 COMMAND_PRIORITY_HIGH,
             ),
             editor.registerCommand<DragEvent>(
                 DRAGOVER_COMMAND,
-                (event) => {
+                event => {
                     return onDragover(event);
                 },
                 COMMAND_PRIORITY_LOW,
             ),
             editor.registerCommand<DragEvent>(
                 DROP_COMMAND,
-                (event) => {
+                event => {
                     return onDrop(event, editor);
                 },
                 COMMAND_PRIORITY_HIGH,
@@ -267,7 +245,8 @@ export default function ImagesPlugin({captionsEnabled}: { captionsEnabled?: bool
     return null;
 }
 
-const TRANSPARENT_IMAGE = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+const TRANSPARENT_IMAGE =
+    'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 const img = document.createElement('img');
 img.src = TRANSPARENT_IMAGE;
 
@@ -351,7 +330,7 @@ function getDragImageData(event: DragEvent): null | InsertImagePayload {
     if (!dragData) {
         return null;
     }
-    const {type, data} = JSON.parse(dragData);
+    const { type, data } = JSON.parse(dragData);
     if (type !== 'image') {
         return null;
     }
@@ -384,8 +363,8 @@ function getDragSelection(event: DragEvent): Range | null | undefined {
         target == null
             ? null
             : target.nodeType === 9
-                ? (target as Document).defaultView
-                : (target as Element).ownerDocument.defaultView;
+              ? (target as Document).defaultView
+              : (target as Element).ownerDocument.defaultView;
     const domSelection = getDOMSelection(targetWindow);
     if (document.caretRangeFromPoint) {
         range = document.caretRangeFromPoint(event.clientX, event.clientY);

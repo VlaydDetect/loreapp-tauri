@@ -1,16 +1,16 @@
-use tauri;
 use super::utils::*;
-use std::{fs, path::PathBuf};
+use crate::ipc::{IpcError, IpcResponse, IpcSimpleResult};
+use crate::settings;
+use crate::settings::AppSettings;
+use crate::Error;
+use serde::{Deserialize, Serialize};
 use std::io::Write;
 use std::path::Path;
 use std::string::ToString;
+use std::{fs, path::PathBuf};
+use tauri;
+use ts_gen::TS;
 use walkdir::WalkDir;
-use crate::settings::{AppSettings};
-use crate::ipc::{IpcError, IpcResponse, IpcSimpleResult};
-use crate::Error;
-use serde::{Serialize, Deserialize};
-use ts_rs::TS;
-use crate::settings;
 
 //#region -------- Paths --------
 pub fn get_tauri_data_dir() -> PathBuf {
@@ -26,7 +26,10 @@ pub fn get_user_path() -> PathBuf {
 }
 
 pub fn get_settings_path() -> PathBuf {
-    PathBuf::from(format!("{}/app_settings.json", path_to_string(&get_user_path())))
+    PathBuf::from(format!(
+        "{}/app_settings.json",
+        path_to_string(&get_user_path())
+    ))
 }
 //#endregion -------- /Paths --------
 
@@ -48,7 +51,7 @@ pub fn init_workspace() {
 
 //#region -------- Commands --------
 #[derive(TS, Serialize, Deserialize)]
-#[ts(export, export_to = "../src/interface/")]
+#[ts(export)]
 pub enum PathsToGet {
     AppData,
     UserData,
@@ -59,7 +62,8 @@ pub fn get_app_path(variant: PathsToGet) -> IpcResponse<String> {
     Ok(path_to_string(&match variant {
         PathsToGet::AppData => get_app_data_path(),
         PathsToGet::UserData => get_user_path(),
-    })).into()
+    }))
+    .into()
 }
 
 #[tauri::command]
@@ -77,7 +81,7 @@ pub fn create_directory_all(path: String) -> IpcResponse<()> {
 #[tauri::command]
 pub fn create_file(filename: String, data: String) -> IpcResponse<()> {
     let path = Path::new(&filename);
-    println!("create_fil - File Path to Create: {}", &path.display());
+    println!("create_file - File Path to Create: {}", &path.display());
 
     if let Some(parent) = path.parent() {
         println!("File Parent: {}", parent.display());
@@ -120,9 +124,12 @@ pub fn get_files_recursively(path: String, include_dirs: bool) -> IpcResponse<Ve
     for entry in WalkDir::new(path)
         .follow_links(true)
         .into_iter()
-        .filter_map(|e| e.ok()) {
+        .filter_map(|e| e.ok())
+    {
         let file_path = entry.path().display().to_string();
-        if !include_dirs && entry.file_type().is_dir() { continue; }
+        if !include_dirs && entry.file_type().is_dir() {
+            continue;
+        }
         result.push(file_path);
     }
     Ok(result).into()

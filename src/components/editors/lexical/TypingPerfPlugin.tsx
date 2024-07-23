@@ -1,12 +1,4 @@
-/**
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- */
-
-import {useEffect} from 'react';
+import { useEffect } from 'react';
 
 import useReport from './hooks/useReport';
 
@@ -29,12 +21,12 @@ const validInputTypes = new Set([
     'deleteSoftLineForward',
 ]);
 
-export default function TypingPerfPlugin() {
+export default function TypingPerfPlugin(): JSX.Element | null {
     const report = useReport();
     useEffect(() => {
         let start = 0;
-        let timerId: ReturnType<typeof setTimeout> | null;
-        let keyPressTimerId: ReturnType<typeof setTimeout> | null;
+        let timerId: ReturnType<typeof setTimeout> | null,
+            keyPressTimerId: ReturnType<typeof setTimeout> | null;
         let log: Array<DOMHighResTimeStamp> = [];
         let invalidatingEvent = false;
 
@@ -63,8 +55,7 @@ export default function TypingPerfPlugin() {
             // Schedule a timer to report the results.
             timerId = setTimeout(() => {
                 const total = log.reduce((a, b) => a + b, 0);
-                const reportedText =
-                    'Typing Perf: ' + Math.round((total / log.length) * 100) / 100 + 'ms';
+                const reportedText = `Typing Perf: ${Math.round((total / log.length) * 100) / 100}ms`;
                 report(reportedText);
                 log = [];
             }, 2000);

@@ -1,15 +1,9 @@
-/**
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- */
-import './index.css';
+import React, { DragEvent as ReactDragEvent, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
-import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
-import {eventFiles} from '@lexical/rich-text';
-import {mergeRegister} from '@lexical/utils';
+import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
+import { eventFiles } from '@lexical/rich-text';
+import { mergeRegister } from '@lexical/utils';
 import {
     $getNearestNodeFromDOMNode,
     $getNodeByKey,
@@ -20,13 +14,13 @@ import {
     DROP_COMMAND,
     LexicalEditor,
 } from 'lexical';
-import * as React from 'react';
-import {DragEvent as ReactDragEvent, useEffect, useRef, useState} from 'react';
-import {createPortal} from 'react-dom';
 
-import {isHTMLElement} from '../utils/guard';
-import {Point} from '../utils/point';
-import {Rect} from '../utils/rect';
+import { isHTMLElement } from '../utils/guard';
+import { Point } from '../utils/point';
+import { Rect } from '../utils/rect';
+import { calculateZoomLevel } from '../utils/zoom';
+
+import './index.css';
 
 const SPACE = 4;
 const TARGET_LINE_HALF_HEIGHT = 2;
@@ -55,35 +49,28 @@ function getTopLevelNodeKeys(editor: LexicalEditor): string[] {
     return editor.getEditorState().read(() => $getRoot().getChildrenKeys());
 }
 
-function getCollapsedMargins(elem: HTMLElement): { marginTop: number, marginBottom: number } {
-    const getMargin = (
-        element: Element | null,
-        margin: 'marginTop' | 'marginBottom',
-    ): number =>
+function getCollapsedMargins(elem: HTMLElement): {
+    marginTop: number;
+    marginBottom: number;
+} {
+    const getMargin = (element: Element | null, margin: 'marginTop' | 'marginBottom'): number =>
         element ? parseFloat(window.getComputedStyle(element)[margin]) : 0;
 
-    const {marginTop, marginBottom} = window.getComputedStyle(elem);
-    const prevElemSiblingMarginBottom = getMargin(
-        elem.previousElementSibling,
-        'marginBottom',
-    );
-    const nextElemSiblingMarginTop = getMargin(
-        elem.nextElementSibling,
-        'marginTop',
-    );
-    const collapsedTopMargin = Math.max(
-        parseFloat(marginTop),
-        prevElemSiblingMarginBottom,
-    );
-    const collapsedBottomMargin = Math.max(
-        parseFloat(marginBottom),
-        nextElemSiblingMarginTop,
-    );
+    const { marginTop, marginBottom } = window.getComputedStyle(elem);
+    const prevElemSiblingMarginBottom = getMargin(elem.previousElementSibling, 'marginBottom');
+    const nextElemSiblingMarginTop = getMargin(elem.nextElementSibling, 'marginTop');
+    const collapsedTopMargin = Math.max(parseFloat(marginTop), prevElemSiblingMarginBottom);
+    const collapsedBottomMargin = Math.max(parseFloat(marginBottom), nextElemSiblingMarginTop);
 
-    return {marginBottom: collapsedBottomMargin, marginTop: collapsedTopMargin};
+    return { marginBottom: collapsedBottomMargin, marginTop: collapsedTopMargin };
 }
 
-function getBlockElement(anchorElem: HTMLElement, editor: LexicalEditor, event: MouseEvent, useEdgeAsDefault = false): HTMLElement | null {
+function getBlockElement(
+    anchorElem: HTMLElement,
+    editor: LexicalEditor,
+    event: MouseEvent,
+    useEdgeAsDefault = false,
+): HTMLElement | null {
     const anchorElementRect = anchorElem.getBoundingClientRect();
     const topLevelNodeKeys = getTopLevelNodeKeys(editor);
 
@@ -102,15 +89,15 @@ function getBlockElement(anchorElem: HTMLElement, editor: LexicalEditor, event: 
             ];
 
             if (firstNodeRect && lastNodeRect) {
-                if (event.y < firstNodeRect.top) {
+                const firstNodeZoom = calculateZoomLevel(firstNode);
+                const lastNodeZoom = calculateZoomLevel(lastNode);
+                if (event.y / firstNodeZoom < firstNodeRect.top) {
                     blockElem = firstNode;
-                } else if (event.y > lastNodeRect.bottom) {
+                } else if (event.y / lastNodeZoom > lastNodeRect.bottom) {
                     blockElem = lastNode;
                 }
 
-                if (blockElem) {
-                    return;
-                }
+                if (blockElem) return;
             }
         }
 
@@ -120,13 +107,11 @@ function getBlockElement(anchorElem: HTMLElement, editor: LexicalEditor, event: 
         while (index >= 0 && index < topLevelNodeKeys.length) {
             const key = topLevelNodeKeys[index];
             const elem = editor.getElementByKey(key);
-            if (elem === null) {
-                break;
-            }
-            const point = new Point(event.x, event.y);
+            if (elem === null) break;
+            const zoom = calculateZoomLevel(elem);
+            const point = new Point(event.x / zoom, event.y / zoom);
             const domRect = Rect.fromDOM(elem);
-            const {marginTop, marginBottom} = getCollapsedMargins(elem);
-
+            const { marginTop, marginBottom } = getCollapsedMargins(elem);
             const rect = domRect.generateNewRect({
                 bottom: domRect.bottom + marginBottom,
                 left: anchorElementRect.left,
@@ -136,7 +121,7 @@ function getBlockElement(anchorElem: HTMLElement, editor: LexicalEditor, event: 
 
             const {
                 result,
-                reason: {isOnTopSide, isOnBottomSide},
+                reason: { isOnTopSide, isOnBottomSide },
             } = rect.contains(point);
 
             if (result) {
@@ -167,7 +152,11 @@ function isOnMenu(element: HTMLElement): boolean {
     return !!element.closest(`.${DRAGGABLE_BLOCK_MENU_CLASSNAME}`);
 }
 
-function setMenuPosition(targetElem: HTMLElement | null, floatingElem: HTMLElement, anchorElem: HTMLElement) {
+function setMenuPosition(
+    targetElem: HTMLElement | null,
+    floatingElem: HTMLElement,
+    anchorElem: HTMLElement,
+) {
     if (!targetElem) {
         floatingElem.style.opacity = '0';
         floatingElem.style.transform = 'translate(-10000px, -10000px)';
@@ -191,7 +180,7 @@ function setMenuPosition(targetElem: HTMLElement | null, floatingElem: HTMLEleme
 }
 
 function setDragImage(dataTransfer: DataTransfer, draggableBlockElem: HTMLElement) {
-    const {transform} = draggableBlockElem.style;
+    const { transform } = draggableBlockElem.style;
 
     // Remove dragImage borders
     draggableBlockElem.style.transform = 'translateZ(0)';
@@ -202,11 +191,16 @@ function setDragImage(dataTransfer: DataTransfer, draggableBlockElem: HTMLElemen
     });
 }
 
-function setTargetLine(targetLineElem: HTMLElement, targetBlockElem: HTMLElement, mouseY: number, anchorElem: HTMLElement) {
-    const {top: targetBlockElemTop, height: targetBlockElemHeight} = targetBlockElem.getBoundingClientRect();
-    const {top: anchorTop, width: anchorWidth} = anchorElem.getBoundingClientRect();
-
-    const {marginTop, marginBottom} = getCollapsedMargins(targetBlockElem);
+function setTargetLine(
+    targetLineElem: HTMLElement,
+    targetBlockElem: HTMLElement,
+    mouseY: number,
+    anchorElem: HTMLElement,
+) {
+    const { top: targetBlockElemTop, height: targetBlockElemHeight } =
+        targetBlockElem.getBoundingClientRect();
+    const { top: anchorTop, width: anchorWidth } = anchorElem.getBoundingClientRect();
+    const { marginTop, marginBottom } = getCollapsedMargins(targetBlockElem);
     let lineTop = targetBlockElemTop;
     if (mouseY >= targetBlockElemTop) {
         lineTop += targetBlockElemHeight + marginBottom / 2;
@@ -218,9 +212,7 @@ function setTargetLine(targetLineElem: HTMLElement, targetBlockElem: HTMLElement
     const left = TEXT_BOX_HORIZONTAL_PADDING - SPACE;
 
     targetLineElem.style.transform = `translate(${left}px, ${top}px)`;
-    targetLineElem.style.width = `${
-        anchorWidth - (TEXT_BOX_HORIZONTAL_PADDING - SPACE) * 2
-    }px`;
+    targetLineElem.style.width = `${anchorWidth - (TEXT_BOX_HORIZONTAL_PADDING - SPACE) * 2}px`;
     targetLineElem.style.opacity = '.4';
 }
 
@@ -231,14 +223,17 @@ function hideTargetLine(targetLineElem: HTMLElement | null) {
     }
 }
 
-function useDraggableBlockMenu(editor: LexicalEditor, anchorElem: HTMLElement, isEditable: boolean) {
+function useDraggableBlockMenu(
+    editor: LexicalEditor,
+    anchorElem: HTMLElement,
+    isEditable: boolean,
+): JSX.Element {
     const scrollerElem = anchorElem.parentElement;
 
     const menuRef = useRef<HTMLDivElement>(null);
     const targetLineRef = useRef<HTMLDivElement>(null);
     const isDraggingBlockRef = useRef<boolean>(false);
-    const [draggableBlockElem, setDraggableBlockElem] =
-        useState<HTMLElement | null>(null);
+    const [draggableBlockElem, setDraggableBlockElem] = useState<HTMLElement | null>(null);
 
     useEffect(() => {
         function onMouseMove(event: MouseEvent) {
@@ -248,13 +243,11 @@ function useDraggableBlockMenu(editor: LexicalEditor, anchorElem: HTMLElement, i
                 return;
             }
 
-            if (isOnMenu(target)) {
-                return;
-            }
+            if (isOnMenu(target)) return;
 
-            const _draggableBlockElem = getBlockElement(anchorElem, editor, event);
+            const draggableBlockElement = getBlockElement(anchorElem, editor, event);
 
-            setDraggableBlockElem(_draggableBlockElem);
+            setDraggableBlockElem(draggableBlockElement);
         }
 
         function onMouseLeave() {
@@ -278,58 +271,41 @@ function useDraggableBlockMenu(editor: LexicalEditor, anchorElem: HTMLElement, i
 
     useEffect(() => {
         function onDragover(event: DragEvent): boolean {
-            if (!isDraggingBlockRef.current) {
-                return false;
-            }
+            if (!isDraggingBlockRef.current) return false;
             const [isFileTransfer] = eventFiles(event);
-            if (isFileTransfer) {
-                return false;
-            }
-            const {pageY, target} = event;
-            if (!isHTMLElement(target)) {
-                return false;
-            }
+            if (isFileTransfer) return false;
+            const { pageY, target } = event;
+            if (!isHTMLElement(target)) return false;
             const targetBlockElem = getBlockElement(anchorElem, editor, event, true);
             const targetLineElem = targetLineRef.current;
-            if (targetBlockElem === null || targetLineElem === null) {
-                return false;
-            }
-            setTargetLine(targetLineElem, targetBlockElem, pageY, anchorElem);
+            if (targetBlockElem === null || targetLineElem === null) return false;
+            setTargetLine(
+                targetLineElem,
+                targetBlockElem,
+                pageY / calculateZoomLevel(target),
+                anchorElem,
+            );
             // Prevent default event to be able to trigger onDrop events
             event.preventDefault();
             return true;
         }
 
         function onDrop(event: DragEvent): boolean {
-            if (!isDraggingBlockRef.current) {
-                return false;
-            }
+            if (!isDraggingBlockRef.current) return false;
             const [isFileTransfer] = eventFiles(event);
-            if (isFileTransfer) {
-                return false;
-            }
-            const {target, dataTransfer, pageY} = event;
+            if (isFileTransfer) return false;
+            const { target, dataTransfer, pageY } = event;
             const dragData = dataTransfer?.getData(DRAG_DATA_FORMAT) || '';
             const draggedNode = $getNodeByKey(dragData);
-            if (!draggedNode) {
-                return false;
-            }
-            if (!isHTMLElement(target)) {
-                return false;
-            }
+            if (!draggedNode) return false;
+            if (!isHTMLElement(target)) return false;
             const targetBlockElem = getBlockElement(anchorElem, editor, event, true);
-            if (!targetBlockElem) {
-                return false;
-            }
+            if (!targetBlockElem) return false;
             const targetNode = $getNearestNodeFromDOMNode(targetBlockElem);
-            if (!targetNode) {
-                return false;
-            }
-            if (targetNode === draggedNode) {
-                return true;
-            }
+            if (!targetNode) return false;
+            if (targetNode === draggedNode) return true;
             const targetBlockElemTop = targetBlockElem.getBoundingClientRect().top;
-            if (pageY >= targetBlockElemTop) {
+            if (pageY / calculateZoomLevel(target) >= targetBlockElemTop) {
                 targetNode.insertAfter(draggedNode);
             } else {
                 targetNode.insertBefore(draggedNode);
@@ -342,26 +318,16 @@ function useDraggableBlockMenu(editor: LexicalEditor, anchorElem: HTMLElement, i
         return mergeRegister(
             editor.registerCommand(
                 DRAGOVER_COMMAND,
-                (event) => {
-                    return onDragover(event);
-                },
+                event => onDragover(event),
                 COMMAND_PRIORITY_LOW,
             ),
-            editor.registerCommand(
-                DROP_COMMAND,
-                (event) => {
-                    return onDrop(event);
-                },
-                COMMAND_PRIORITY_HIGH,
-            ),
+            editor.registerCommand(DROP_COMMAND, event => onDrop(event), COMMAND_PRIORITY_HIGH),
         );
     }, [anchorElem, editor]);
 
     function onDragStart(event: ReactDragEvent<HTMLDivElement>): void {
         const dataTransfer = event.dataTransfer;
-        if (!dataTransfer || !draggableBlockElem) {
-            return;
-        }
+        if (!dataTransfer || !draggableBlockElem) return;
         setDragImage(dataTransfer, draggableBlockElem);
         let nodeKey = '';
         editor.update(() => {
@@ -384,9 +350,10 @@ function useDraggableBlockMenu(editor: LexicalEditor, anchorElem: HTMLElement, i
             <div
                 className="icon draggable-block-menu"
                 ref={menuRef}
-                draggable={true}
+                draggable
                 onDragStart={onDragStart}
-                onDragEnd={onDragEnd}>
+                onDragEnd={onDragEnd}
+            >
                 <div className={isEditable ? 'icon' : ''} />
             </div>
             <div className="draggable-block-target-line" ref={targetLineRef} />
@@ -395,7 +362,11 @@ function useDraggableBlockMenu(editor: LexicalEditor, anchorElem: HTMLElement, i
     );
 }
 
-export default function DraggableBlockPlugin({anchorElem = document.body}: { anchorElem?: HTMLElement }) {
+export default function DraggableBlockPlugin({
+    anchorElem = document.body,
+}: {
+    anchorElem?: HTMLElement;
+}): JSX.Element {
     const [editor] = useLexicalComposerContext();
     return useDraggableBlockMenu(editor, anchorElem, editor._editable);
 }

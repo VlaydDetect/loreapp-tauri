@@ -4,11 +4,11 @@
 //!       `XTake` trait (by blanket implementation)with `.x_take(key)`
 //!        and `.x_take_val(key)`.
 
-use crate::prelude::*;
 use super::x_take::XTakeImpl;
 use crate::model::store::Result;
-use surrealdb::sql::{Object};
+use crate::prelude::*;
 use crate::utils::LabelValue;
+use surrealdb::sql::Object;
 
 impl XTakeImpl<String> for Object {
     fn x_take_impl(&mut self, k: &str) -> Result<Option<String>> {

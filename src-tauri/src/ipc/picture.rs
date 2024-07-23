@@ -88,34 +88,33 @@ pub async fn list_pictures_with_urls(app: AppHandle<Wry>, filter: Option<Value>,
     }
 }
 
-#[command]
-pub async fn collect_pictures_from_disk(app: AppHandle<Wry>, path: String) -> IpcResponse<Vec<Picture>> {
-    let mut paths = Vec::<String>::new();
-
-    WalkDir::new(path)
-        .into_iter()
-        .filter_map(Result::ok) // TODO: handle entries that could not be read
-        .for_each(|entry| {
-            let file_path = entry.path().to_string_lossy().to_string();
-
-            if entry.file_type().is_file() {
-                let extension = entry.path().extension().unwrap().to_str().unwrap();
-
-                if IMAGE_EXTENSIONS.contains(&extension) {
-                    if (!paths.contains(&file_path)) {
-                        paths.push(file_path);
-                    }
-                }
-            }
-        });
-
-    let data = paths.into_values().collect::<Vec<String>>();
-
-    let sql = "BEGIN; FOR $url IN $data { CREATE picture SET data_url = $url; }; SELECT * FROM picture; COMMIT;";
-    let vars = vmap!("data".into() => data.into());
-
-    match Ctx::from_app(app) {
-        Ok(ctx) => into_response(PictureBmc::custom_multi_query(ctx, sql, Some(vars.into())).await),
-        Err(_) => Err(Error::Model(ModelError::CtxFail)).into(),
-    }
-}
+// TODO: get tags & categories
+// #[command]
+// pub async fn collect_pictures_from_disk(app: AppHandle<Wry>, path: String) -> IpcResponse<Vec<Picture>> {
+//     let mut paths = Vec::<String>::new();
+//
+//     WalkDir::new(path)
+//         .into_iter()
+//         .filter_map(Result::ok) // TODO: handle entries that could not be read
+//         .for_each(|entry| {
+//             let file_path = entry.path().to_string_lossy().to_string();
+//
+//             if entry.file_type().is_file() {
+//                 let extension = entry.path().extension().unwrap().to_str().unwrap();
+//
+//                 if IMAGE_EXTENSIONS.contains(&extension) {
+//                     if (!paths.contains(&file_path)) {
+//                         paths.push(file_path);
+//                     }
+//                 }
+//             }
+//         });
+//
+//     let sql = "BEGIN; FOR $path IN $data { CREATE picture SET data_url = $path; }; SELECT * FROM picture; COMMIT;";
+//     let vars = vmap!("data".into() => paths.into());
+//
+//     match Ctx::from_app(app) {
+//         Ok(ctx) => into_response(PictureBmc::custom_multi_query(ctx, sql, Some(vars.into())).await),
+//         Err(_) => Err(Error::Model(ModelError::CtxFail)).into(),
+//     }
+// }

@@ -34,25 +34,14 @@ import {
     TableNode,
     TableRowNode,
 } from '@lexical/table';
-import {
-    $createTextNode,
-    $isParagraphNode,
-    $isTextNode,
-    LexicalNode,
-} from 'lexical';
+import { $isParagraphNode, $isTextNode, LexicalNode } from 'lexical';
 
-import {
-    $createEquationNode,
-    $isEquationNode,
-    EquationNode,
-} from "./EquationPlugin/EquationNode";
-import {$createImageNode, $isImageNode, ImageNode} from './ImagePlugin/ImageNode';
+import { $createEquationNode, $isEquationNode, EquationNode } from './EquationPlugin/EquationNode';
+import { $createImageNode, $isImageNode, ImageNode } from './ImagePlugin/ImageNode';
 
 export const HR: ElementTransformer = {
     dependencies: [HorizontalRuleNode],
-    export: (node: LexicalNode) => {
-        return $isHorizontalRuleNode(node) ? '***' : null;
-    },
+    export: (node: LexicalNode) => ($isHorizontalRuleNode(node) ? '***' : null),
     regExp: /^(---|\*\*\*|___)\s?$/,
     replace: (parentNode, _1, _2, isImport) => {
         const line = $createHorizontalRuleNode();
@@ -71,15 +60,15 @@ export const HR: ElementTransformer = {
 
 export const IMAGE: TextMatchTransformer = {
     dependencies: [ImageNode],
-    export: (node) => {
+    export: node => {
         if (!$isImageNode(node)) {
             return null;
         }
 
         return `![${node.getAltText()}](${node.getSrc()})`;
     },
-    importRegExp: /!(?:\[([^[]*)\])(?:\(([^(]+)\))/,
-    regExp: /!(?:\[([^[]*)\])(?:\(([^(]+)\))$/,
+    importRegExp: /!\[([^[]*)]\(([^(]+)\)/,
+    regExp: /!\[([^[]*)]\(([^(]+)\)$/,
     replace: (textNode, match) => {
         const [, altText, src] = match;
         const imageNode = $createImageNode({
@@ -95,7 +84,7 @@ export const IMAGE: TextMatchTransformer = {
 
 export const EQUATION: TextMatchTransformer = {
     dependencies: [EquationNode],
-    export: (node) => {
+    export: node => {
         if (!$isEquationNode(node)) {
             return null;
         }
@@ -114,7 +103,7 @@ export const EQUATION: TextMatchTransformer = {
 };
 
 // Very primitive table setup
-const TABLE_ROW_REG_EXP = /^(?:\|)(.+)(?:\|)\s?$/;
+const TABLE_ROW_REG_EXP = /^\|(.+)\|\s?$/;
 const TABLE_ROW_DIVIDER_REG_EXP = /^(\| ?:?-*:? ?)+\|\s?$/;
 
 export const TABLE: ElementTransformer = {
@@ -137,10 +126,7 @@ export const TABLE: ElementTransformer = {
                 // It's TableCellNode so it's just to make flow happy
                 if ($isTableCellNode(cell)) {
                     rowOutput.push(
-                        $convertToMarkdownString(TRANSFORMERS, cell).replace(
-                            /\n/g,
-                            '\\n',
-                        ),
+                        $convertToMarkdownString(TRANSFORMERS, cell).replace(/\n/g, '\\n'),
                     );
                     if (cell.__headerState === TableCellHeaderStates.ROW) {
                         isHeaderRow = true;
@@ -150,7 +136,7 @@ export const TABLE: ElementTransformer = {
 
             output.push(`| ${rowOutput.join(' | ')} |`);
             if (isHeaderRow) {
-                output.push(`| ${rowOutput.map((_) => '---').join(' | ')} |`);
+                output.push(`| ${rowOutput.map(_ => '---').join(' | ')} |`);
             }
         }
 
@@ -172,7 +158,7 @@ export const TABLE: ElementTransformer = {
             }
 
             // Add header state to row cells
-            lastRow.getChildren().forEach((cell) => {
+            lastRow.getChildren().forEach(cell => {
                 if (!$isTableCellNode(cell)) {
                     return;
                 }
@@ -234,10 +220,7 @@ export const TABLE: ElementTransformer = {
         }
 
         const previousSibling = parentNode.getPreviousSibling();
-        if (
-            $isTableNode(previousSibling) &&
-            getTableColumnsSize(previousSibling) === maxCells
-        ) {
+        if ($isTableNode(previousSibling) && getTableColumnsSize(previousSibling) === maxCells) {
             previousSibling.append(...table.getChildren());
             parentNode.remove();
         } else {
@@ -266,7 +249,7 @@ const mapToTableCells = (textContent: string): Array<TableCellNode> | null => {
     if (!match || !match[1]) {
         return null;
     }
-    return match[1].split('|').map((text) => createTableCell(text));
+    return match[1].split('|').map(text => createTableCell(text));
 };
 
 export const TRANSFORMERS: Array<Transformer> = [

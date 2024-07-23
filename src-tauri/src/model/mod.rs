@@ -5,38 +5,40 @@
 //! model controller calls the store and fire model events as appropriate.
 //!
 
-use ctx::Ctx;
 use crate::event::HubEvent;
+use ctx::Ctx;
 use serde::Serialize;
-use surrealdb::sql::{Object, Value};
 use store::SurrealStore;
-use ts_rs::TS;
+use surrealdb::sql::{Object, Value};
+use ts_gen::TS;
 
 mod bmc_base;
-mod model_store;
+mod bmc_graph;
+pub mod ctx;
 mod document;
+mod documents_folder;
+mod documents_template;
+mod error;
+mod model_store;
 mod picture;
 mod seed_for_dev;
 mod store;
-pub mod ctx;
-mod error;
 mod tags_and_categories;
-mod bmc_graph;
-mod documents_folder;
 
 // --- Re-exports
-pub use error::{Error, Result};
-pub use model_store::*;
 pub use document::*;
 pub use documents_folder::*;
+pub use documents_template::*;
+pub use error::{Error, Result};
+pub use model_store::*;
 pub use picture::*;
 pub use tags_and_categories::*;
 // For dev only
 pub use seed_for_dev::seed_store_for_dev;
 
 fn fire_model_event<D>(ctx: &Ctx, entity: &str, action: &str, data: D)
-    where
-        D: Serialize + Clone,
+where
+    D: Serialize + Clone,
 {
     ctx.emit_hub_event(HubEvent {
         hub: "Model".to_string(),
@@ -51,6 +53,7 @@ fn get_parent_id(mut val: Object) -> Option<String> {
 
     if let Some(parent_obj) = val.remove("parent") {
         if let Value::Array(surrealdb::sql::Array(parent_obj_vec)) = parent_obj {
+            // eprintln!("Parents len: {} \n", parent_obj_vec.len());
             if let Some(parent_obj) = parent_obj_vec.iter().next() {
                 if let Value::Thing(parent_obj) = parent_obj {
                     parent = Some(parent_obj.to_raw());
@@ -65,7 +68,7 @@ fn get_parent_id(mut val: Object) -> Option<String> {
 /// For now, all mutation queries will return an {id} struct.
 /// Note: Keep it light, and client can do a get if needed.
 #[derive(TS, Serialize, Clone)]
-#[ts(export, export_to = "../src/interface/")]
+#[ts(export)]
 pub struct ModelMutateResultData {
     pub id: String,
 }
@@ -115,5 +118,5 @@ macro_rules! vmap {
     }};
 }
 
-pub(crate) use vmap;
 use crate::model::store::x_take::XTake;
+pub(crate) use vmap;

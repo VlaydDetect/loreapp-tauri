@@ -1,29 +1,13 @@
-/**
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- */
-
-import './Dialog.css';
-
-import * as React from 'react';
-import {ReactNode} from 'react';
+import React from 'react';
 
 type Props = Readonly<{
-    'data-test-id'?: string;
-    children: ReactNode;
+    children: React.ReactNode;
 }>;
 
-export function DialogButtonsList({children}: Props) {
-    return <div className="DialogButtonsList">{children}</div>;
+export function DialogButtonsList({ children }: Props): JSX.Element {
+    return <div className="tw-flex tw-flex-col tw-justify-end tw-space-y-5">{children}</div>;
 }
 
-export function DialogActions({'data-test-id': dataTestId, children}: Props) {
-    return (
-        <div className="DialogActions" data-test-id={dataTestId}>
-            {children}
-        </div>
-    );
+export function DialogActions({ children }: Props): JSX.Element {
+    return <div className="tw-flex tw-flex-row tw-justify-end tw-mt-5">{children}</div>;
 }

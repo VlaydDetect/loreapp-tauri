@@ -84,7 +84,7 @@ impl SurrealStore {
     pub(in crate::model) async fn exec_select<F: Into<FilterGroups>>(&self, tb: &str, filter_groups: Option<F>, list_options: ListOptions) -> Result<Vec<Object>> {
         let (sql, vars) = surreal_qb::build_query::build_select_query(tb.to_string(), filter_groups, list_options);
 
-        self.exec_custom_solo_query(sql, Some(vars.into())).await
+        self.exec_custom_solo_query(sql, Some(vars)).await
     }
     //#endregion ---------------------- SQL execs ----------------------
 
@@ -107,6 +107,8 @@ impl SurrealStore {
 
     pub(in crate::model) async fn exec_delete_edge(&self, fid: &str, entity: &'static str, tid: &str) -> Result<Object> {
         let sql = f!("DELETE $fid->{entity} WHERE out = $tid RETURN BEFORE");
+        println!("sql: {sql}");
+        println!("fid: {fid}, entity: {entity}, tid: {tid}");
         let vars = vmap!["fid".into() => thing(fid)?.into(), "tb".into() => entity.into(), "tid".into() => thing(tid)?.into()];
 
         let mut ress = self.db.query(sql).bind(vars).await?;
@@ -132,10 +134,12 @@ impl SurrealStore {
                         self.exec_delete_edge(from_id, entity, id).await
                     }
                     Some(to_id) => {
-                        let sql = f!("BEGIN; DELETE $fid->{entity} WHERE out = $id; RELATE $tid->{entity}->$id; COMMIT;");
-                        let vars = vmap!("fid".into() => thing(from_id)?.into(), "id".into() => thing(id)?.into(), "tid".into() => thing(to_id)?.into());
-                        let mut ress = self.db.query(sql).bind(vars).await?;
-                        multi_response_to_object_vec(ress, 1)?.into_iter().next().ok_or_else(|| Error::ResponseIsEmpty).into()
+                        // let sql = f!("BEGIN; DELETE $fid->{entity} WHERE out = $id; RELATE $tid->{entity}->$id; COMMIT;");
+                        // let vars = vmap!("fid".into() => thing(from_id)?.into(), "id".into() => thing(id)?.into(), "tid".into() => thing(to_id)?.into());
+                        // let mut ress = self.db.query(sql).bind(vars).await?;
+                        // multi_response_to_object_vec(ress, 1)?.into_iter().next().ok_or_else(|| Error::ResponseIsEmpty).into()
+                        self.exec_delete_edge(from_id, entity, id).await?;
+                        self.exec_add_edge(to_id, entity, id).await
                     }
                 }
             }
@@ -144,9 +148,10 @@ impl SurrealStore {
     //#endregion ---------------------- Graph execs ----------------------
 
     //#region ---------------------- Custom execs ----------------------
-    pub(in crate::model) async fn exec_custom_solo_query<S: IntoQuery + std::fmt::Debug>(&self, sql: S, vars: Option<Object>) -> Result<Vec<Object>> {
+    pub(in crate::model) async fn exec_custom_solo_query<S: IntoQuery + Debug>(&self, sql: S, vars: Option<Object>) -> Result<Vec<Object>> {
         if let Some(vars) = vars {
             let mut ress = self.db.query(sql).bind(vars).await?;
+            let num = ress.num_statements();
             return solo_response_to_object_vec(ress);
         }
 

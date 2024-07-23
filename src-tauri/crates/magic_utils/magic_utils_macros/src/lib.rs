@@ -30,3 +30,12 @@ pub fn from_string(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     debug_print_generated(&ast, &tokens);
     tokens.into()
 }
+
+#[proc_macro_derive(Display, attributes(magic))]
+pub fn display(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let ast = syn::parse_macro_input!(input as DeriveInput);
+
+    let tokens = macros::display::display_inner(&ast).unwrap_or_else(|err| err.to_compile_error());
+    debug_print_generated(&ast, &tokens);
+    tokens.into()
+}

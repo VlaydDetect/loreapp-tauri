@@ -6,11 +6,11 @@
  *
  */
 
-import type {EditorThemeClasses} from 'lexical';
+import type { EditorThemeClasses } from 'lexical';
 
 import './StickyEditorTheme.css';
 
-import baseTheme from './BaseEditorTheme';
+import baseTheme from './PlaygroundEditorTheme';
 
 const theme: EditorThemeClasses = {
     ...baseTheme,

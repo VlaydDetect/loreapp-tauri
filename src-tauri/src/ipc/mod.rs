@@ -1,38 +1,39 @@
-mod params;
 mod document;
-mod response;
+mod documents_folder;
+mod documents_template;
+mod params;
 mod picture;
+mod response;
 mod settings;
 mod tags_and_categories;
-mod documents_folder;
 
+use crate::prelude::f;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use crate::prelude::f;
 
 // --- re-exports
-pub use params::*;
 pub use document::*;
 pub use documents_folder::*;
-pub use response::*;
+pub use documents_template::*;
+pub use params::*;
 pub use picture::*;
-pub use tags_and_categories::*;
+pub use response::*;
 pub use settings::*;
+pub use tags_and_categories::*;
 pub(crate) fn into_response<D>(result: crate::model::Result<D>) -> IpcResponse<D>
-    where D: Serialize
+where
+    D: Serialize,
 {
     match result {
         Ok(val) => IpcResponse {
             error: None,
-            result: Some(IpcSimpleResult {
-                data: val
-            }),
+            result: Some(IpcSimpleResult { data: val }),
         },
         Err(err) => IpcResponse {
             error: Some(IpcError {
                 message: f!("{err}"),
             }),
             result: None,
-        }
+        },
     }
 }

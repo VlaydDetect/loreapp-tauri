@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 
 import { Tree } from 'antd';
 import type { TreeDataNode, TreeProps } from 'antd';
@@ -23,7 +23,6 @@ type TProps = {
 const CategoriesTreeView: React.FC<TProps> = observer(({ doubleClickHandler }) => {
     const {
         tagsAndCategoriesStore: {
-            categoriesTree,
             categories,
             createNewCategory,
             createAndAttachNewCategory,
@@ -32,6 +31,7 @@ const CategoriesTreeView: React.FC<TProps> = observer(({ doubleClickHandler }) =
             findCategoryById,
             findParent,
             reattachCategory,
+            categoriesTreeAsTreeData,
         },
     } = useMobXStores();
 
@@ -55,25 +55,6 @@ const CategoriesTreeView: React.FC<TProps> = observer(({ doubleClickHandler }) =
     const { idToRename, setIdToRename, renameAction, submitCallback } = useRenameInputs(
         (renamingId, newName) => renameCategory(renamingId, newName),
     );
-
-    const treeData = useMemo(() => {
-        const loop = (data: CategoryNode[]): TreeDataNode[] =>
-            data.map(item => {
-                if (item.children) {
-                    return { title: item.name, key: item.id, children: loop(item.children) };
-                }
-
-                return {
-                    title: item.name,
-                    key: item.id,
-                };
-            });
-
-        if (categoriesTree.nodes.length > 0) {
-            return loop(categoriesTree.nodes);
-        }
-        return [];
-    }, [categoriesTree.nodes]);
 
     const divRef = useRef<HTMLDivElement>(null);
 
@@ -138,6 +119,7 @@ const CategoriesTreeView: React.FC<TProps> = observer(({ doubleClickHandler }) =
                 isRenaming={(node.key as string) === idToRename}
                 name={node.title as string}
                 submitCallback={submitCallback}
+                escapeCallback={() => setIdToRename(undefined)}
             />
         ) : (
             title
@@ -147,15 +129,20 @@ const CategoriesTreeView: React.FC<TProps> = observer(({ doubleClickHandler }) =
     const createAction: Action = {
         type: 'action',
         text: 'Create',
-        handler: () => createNewCategory(),
+        handler: async () => {
+            const category = await createNewCategory();
+            setIdToRename(category.id);
+        },
     };
 
     const createAndAttachAction: Action = {
         type: 'action',
         text: 'Create & Attach',
-        handler: node => {
+        handler: async node => {
             if (node) {
-                createAndAttachNewCategory(node.id);
+                const category = await createAndAttachNewCategory(node.id);
+                setExpandedKeys(prev => [...prev, node.id]);
+                setIdToRename(category.id);
             }
         },
     };
@@ -173,12 +160,12 @@ const CategoriesTreeView: React.FC<TProps> = observer(({ doubleClickHandler }) =
     return (
         <div
             ref={divRef}
-            className="tw-h-full tw-w-full tw-flex tw-flex-col tw-items-center"
+            className="tw-flex tw-h-full tw-w-full tw-flex-col tw-items-center"
             onContextMenu={event => handleElementContentMenu(event)}
         >
             <Input
                 type="search"
-                className="tw-bg-white/5 tw-text-cool-white tw-m-2 tw-border-white/5 tw-w-11/12"
+                className="tw-m-2 tw-w-11/12 tw-border-white/5 tw-bg-white/5 tw-text-cool-white"
                 placeholder="Search"
                 onChange={onSearchChange}
             />
@@ -191,14 +178,15 @@ const CategoriesTreeView: React.FC<TProps> = observer(({ doubleClickHandler }) =
                         ? Number(divRef.current?.style.maxHeight)
                         : undefined
                 }
-                treeData={treeData}
+                // treeData={treeData}
+                treeData={categoriesTreeAsTreeData}
                 titleRender={titleRender}
                 onExpand={onExpand}
                 expandedKeys={searchValue.length > 0 ? searchExpandedKeys : expandedKeys}
                 autoExpandParent={autoExpandParent}
                 draggable
                 blockNode
-                onDrop={info => handleDrop(info)}
+                onDrop={handleDrop}
                 selectable={false}
                 selectedKeys={selectedNode ? [selectedNode.id] : []}
                 onRightClick={info => handleNodeContentMenu(info.event, info.node)}

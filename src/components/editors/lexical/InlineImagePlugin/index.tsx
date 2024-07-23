@@ -1,16 +1,7 @@
-/**
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- */
-import type {Position} from './InlineImageNode';
-
-import '../ui/Checkbox.css';
-
-import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
-import {$wrapNodeInElement, mergeRegister} from '@lexical/utils';
+import React, { useEffect, useRef, useState } from 'react';
+import './InlineImageNode.css';
+import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
+import { $wrapNodeInElement, mergeRegister } from '@lexical/utils';
 import {
     $createParagraphNode,
     $createRangeSelection,
@@ -29,9 +20,8 @@ import {
     LexicalCommand,
     LexicalEditor,
 } from 'lexical';
-import * as React from 'react';
-import {useEffect, useRef, useState} from 'react';
-import {CAN_USE_DOM} from '@/utils/utils';
+import type { Position } from './InlineImageNode';
+import { CAN_USE_DOM } from '@/utils';
 
 import {
     $createInlineImageNode,
@@ -40,18 +30,27 @@ import {
     InlineImagePayload,
 } from './InlineImageNode';
 import Button from '../ui/Button';
-import {DialogActions} from '../ui/Dialog';
+import { DialogActions } from '../ui/Dialog';
 import FileInput from '../ui/FileInput';
 import Select from '../ui/Select';
 import TextInput from '../ui/TextInput';
 
 export type InsertInlineImagePayload = Readonly<InlineImagePayload>;
 
-const getDOMSelection = (targetWindow: Window | null): Selection | null => CAN_USE_DOM ? (targetWindow || window).getSelection() : null;
+const getDOMSelection = (targetWindow: Window | null): Selection | null =>
+    CAN_USE_DOM ? (targetWindow || window).getSelection() : null;
 
-export const INSERT_INLINE_IMAGE_COMMAND: LexicalCommand<InlineImagePayload> = createCommand('INSERT_INLINE_IMAGE_COMMAND');
+export const INSERT_INLINE_IMAGE_COMMAND: LexicalCommand<InlineImagePayload> = createCommand(
+    'INSERT_INLINE_IMAGE_COMMAND',
+);
 
-export function InsertInlineImageDialog({activeEditor, onClose}: { activeEditor: LexicalEditor; onClose: () => void; }) {
+export function InsertInlineImageDialog({
+    activeEditor,
+    onClose,
+}: {
+    activeEditor: LexicalEditor;
+    onClose: () => void;
+}): JSX.Element {
     const hasModifier = useRef(false);
 
     const [src, setSrc] = useState('');
@@ -94,14 +93,14 @@ export function InsertInlineImageDialog({activeEditor, onClose}: { activeEditor:
     }, [activeEditor]);
 
     const handleOnClick = () => {
-        const payload = {altText, position, showCaption, src};
+        const payload = { altText, position, showCaption, src };
         activeEditor.dispatchCommand(INSERT_INLINE_IMAGE_COMMAND, payload);
         onClose();
     };
 
     return (
         <>
-            <div style={{marginBottom: '1em'}}>
+            <div style={{ marginBottom: '1em' }}>
                 <FileInput
                     label="Image Upload"
                     onChange={loadImage}
@@ -109,7 +108,7 @@ export function InsertInlineImageDialog({activeEditor, onClose}: { activeEditor:
                     data-test-id="image-modal-file-upload"
                 />
             </div>
-            <div style={{marginBottom: '1em'}}>
+            <div style={{ marginBottom: '1em' }}>
                 <TextInput
                     label="Alt Text"
                     placeholder="Descriptive alternative text"
@@ -120,11 +119,12 @@ export function InsertInlineImageDialog({activeEditor, onClose}: { activeEditor:
             </div>
 
             <Select
-                style={{marginBottom: '1em', width: '290px'}}
+                style={{ marginBottom: '1em', width: '290px' }}
                 label="Position"
                 name="position"
                 id="position-select"
-                onChange={handlePositionChange}>
+                onChange={handlePositionChange}
+            >
                 <option value="left">Left</option>
                 <option value="right">Right</option>
                 <option value="full">Full Width</option>
@@ -133,6 +133,7 @@ export function InsertInlineImageDialog({activeEditor, onClose}: { activeEditor:
             <div className="Input__wrapper">
                 <input
                     id="caption"
+                    className="InlineImageNode_Checkbox"
                     type="checkbox"
                     checked={showCaption}
                     onChange={handleShowCaptionChange}
@@ -144,7 +145,8 @@ export function InsertInlineImageDialog({activeEditor, onClose}: { activeEditor:
                 <Button
                     data-test-id="image-modal-file-upload-btn"
                     disabled={isDisabled}
-                    onClick={() => handleOnClick()}>
+                    onClick={() => handleOnClick()}
+                >
                     Confirm
                 </Button>
             </DialogActions>
@@ -152,7 +154,7 @@ export function InsertInlineImageDialog({activeEditor, onClose}: { activeEditor:
     );
 }
 
-export default function InlineImagePlugin() {
+export default function InlineImagePlugin(): JSX.Element | null {
     const [editor] = useLexicalComposerContext();
 
     useEffect(() => {
@@ -163,7 +165,7 @@ export default function InlineImagePlugin() {
         return mergeRegister(
             editor.registerCommand<InsertInlineImagePayload>(
                 INSERT_INLINE_IMAGE_COMMAND,
-                (payload) => {
+                payload => {
                     const imageNode = $createInlineImageNode(payload);
                     $insertNodes([imageNode]);
                     if ($isRootOrShadowRoot(imageNode.getParentOrThrow())) {
@@ -176,21 +178,21 @@ export default function InlineImagePlugin() {
             ),
             editor.registerCommand<DragEvent>(
                 DRAGSTART_COMMAND,
-                (event) => {
+                event => {
                     return onDragStart(event);
                 },
                 COMMAND_PRIORITY_HIGH,
             ),
             editor.registerCommand<DragEvent>(
                 DRAGOVER_COMMAND,
-                (event) => {
+                event => {
                     return onDragover(event);
                 },
                 COMMAND_PRIORITY_LOW,
             ),
             editor.registerCommand<DragEvent>(
                 DROP_COMMAND,
-                (event) => {
+                event => {
                     return onDrop(event, editor);
                 },
                 COMMAND_PRIORITY_HIGH,
@@ -201,7 +203,8 @@ export default function InlineImagePlugin() {
     return null;
 }
 
-const TRANSPARENT_IMAGE = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+const TRANSPARENT_IMAGE =
+    'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 const img = document.createElement('img');
 img.src = TRANSPARENT_IMAGE;
 
@@ -284,7 +287,7 @@ function getDragImageData(event: DragEvent): null | InsertInlineImagePayload {
     if (!dragData) {
         return null;
     }
-    const {type, data} = JSON.parse(dragData);
+    const { type, data } = JSON.parse(dragData);
     if (type !== 'image') {
         return null;
     }
@@ -317,8 +320,8 @@ function getDragSelection(event: DragEvent): Range | null | undefined {
         target == null
             ? null
             : target.nodeType === 9
-                ? (target as Document).defaultView
-                : (target as Element).ownerDocument.defaultView;
+              ? (target as Document).defaultView
+              : (target as Element).ownerDocument.defaultView;
     const domSelection = getDOMSelection(targetWindow);
     if (document.caretRangeFromPoint) {
         range = document.caretRangeFromPoint(event.clientX, event.clientY);

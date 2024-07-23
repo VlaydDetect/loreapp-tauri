@@ -3,18 +3,14 @@
 //! Right now, very simple, just a HubEvent data type.
 //!
 
-use serde::Serialize;
-use ts_rs::TS;
+use serde::{Deserialize, Serialize};
+use ts_gen::TS;
 
-#[derive(TS, Serialize, Clone)]
-#[ts(export, export_to = "../src/interface/")]
+#[derive(Serialize, TS, Clone)]
+#[ts(export)]
 pub struct HubEvent<D: Serialize + Clone> {
     pub hub: String,
     pub topic: String,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub label: Option<String>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub data: Option<D>,
 }

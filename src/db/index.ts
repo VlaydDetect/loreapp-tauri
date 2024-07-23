@@ -10,6 +10,9 @@ import {
     DocumentsFolderForCreate,
     DocumentsFolderForUpdate,
     DocumentsFolderTree,
+    DocumentsTemplate,
+    DocumentsTemplateForCreate,
+    DocumentsTemplateForUpdate,
     Picture,
     PictureForCreate,
     PictureForUpdate,
@@ -19,13 +22,22 @@ import {
 } from '@/interface';
 import ipcInvoke from '@/ipc';
 
-type TOrderBy = ['Asc', string] | ['Desc', string];
+export type TOrderBy = ['Asc', string] | ['Desc', string];
 
-interface IListOptions {
+export interface IListOptions {
     limit?: number;
     offset?: number;
     orderBys: TOrderBy[];
 }
+
+type FilterBase = {
+    id?: string;
+    ctime?: string;
+};
+
+type MakeFilter<F extends FilterBase> = {
+    [key in keyof F]?: any;
+}[];
 
 /**
  * Base Frontend Model Controller class with basic CRUD except
@@ -34,12 +46,8 @@ interface IListOptions {
  * - C - For the Create data type (e.g., PictureForCreate)
  * - U - For the Update data type (e.g., PictureForUpdate)
  */
-class BaseFmc<M, C, U> {
+class BaseFmc<M, C, U, F extends FilterBase> {
     protected readonly _cmdSuffix: string;
-
-    get cmdSuffix(): string {
-        return this._cmdSuffix;
-    }
 
     constructor(cmd_suffix: string) {
         this._cmdSuffix = cmd_suffix;
@@ -61,7 +69,7 @@ class BaseFmc<M, C, U> {
         return ipcInvoke<M>(`delete_${this._cmdSuffix}`, { id }, true);
     }
 
-    async list(filter?: any, list_options?: IListOptions): Promise<M[]> {
+    async list(filter?: MakeFilter<F>, list_options?: IListOptions): Promise<M[]> {
         let suffix = this._cmdSuffix;
         if (suffix.endsWith('y')) {
             suffix = `${suffix.substring(0, suffix.length - 1)}ie`;
@@ -70,7 +78,14 @@ class BaseFmc<M, C, U> {
     }
 }
 
-class PictureFmc extends BaseFmc<Picture, PictureForCreate, PictureForUpdate> {
+type PictureFilter = FilterBase & {
+    name?: string;
+    desc?: string;
+    tags?: unknown[];
+    categories?: unknown[];
+};
+
+class PictureFmc extends BaseFmc<Picture, PictureForCreate, PictureForUpdate, PictureFilter> {
     constructor() {
         super('picture');
     }
@@ -83,7 +98,10 @@ class PictureFmc extends BaseFmc<Picture, PictureForCreate, PictureForUpdate> {
         return ipcInvoke<Picture>('get_picture_with_url', { id });
     }
 
-    async listWithUrls(filter?: any, list_options?: IListOptions): Promise<Picture[]> {
+    async listWithUrls(
+        filter?: MakeFilter<PictureFilter>,
+        list_options?: IListOptions,
+    ): Promise<Picture[]> {
         return ipcInvoke<Picture[]>('list_pictures_with_urls', { filter, list_options });
     }
 
@@ -92,7 +110,15 @@ class PictureFmc extends BaseFmc<Picture, PictureForCreate, PictureForUpdate> {
     }
 }
 
-class DocumentFmc extends BaseFmc<Document, DocumentForCreate, DocumentForUpdate> {
+type DocumentFilter = FilterBase & {
+    title?: string;
+    body?: string;
+    tags?: unknown[];
+    categories?: unknown[];
+    used_pics?: unknown[];
+};
+
+class DocumentFmc extends BaseFmc<Document, DocumentForCreate, DocumentForUpdate, DocumentFilter> {
     constructor() {
         super('document');
     }
@@ -102,10 +128,15 @@ class DocumentFmc extends BaseFmc<Document, DocumentForCreate, DocumentForUpdate
     }
 }
 
+type DocumentsFolderFilter = FilterBase & {
+    name?: string;
+};
+
 class DocumentsFolderFmc extends BaseFmc<
     DocumentsFolder,
     DocumentsFolderForCreate,
-    DocumentsFolderForUpdate
+    DocumentsFolderForUpdate,
+    DocumentsFolderFilter
 > {
     constructor() {
         super('documents_folder');
@@ -132,7 +163,11 @@ class DocumentsFolderFmc extends BaseFmc<
     }
 }
 
-class CategoryFmc extends BaseFmc<Category, CategoryForCreate, CategoryForUpdate> {
+type CategoryFilter = FilterBase & {
+    name?: string;
+};
+
+class CategoryFmc extends BaseFmc<Category, CategoryForCreate, CategoryForUpdate, CategoryFilter> {
     constructor() {
         super('category');
     }
@@ -162,9 +197,28 @@ class CategoryFmc extends BaseFmc<Category, CategoryForCreate, CategoryForUpdate
     }
 }
 
-class TagFmc extends BaseFmc<Tag, TagForCreate, TagForUpdate> {
+type TagFilter = FilterBase & {
+    name?: string;
+};
+
+class TagFmc extends BaseFmc<Tag, TagForCreate, TagForUpdate, TagFilter> {
     constructor() {
         super('tag');
+    }
+}
+
+type DocumnetsTemplateFilter = FilterBase & {
+    name?: string;
+};
+
+class DocumnetsTemplateFmc extends BaseFmc<
+    DocumentsTemplate,
+    DocumentsTemplateForCreate,
+    DocumentsTemplateForUpdate,
+    DocumnetsTemplateFilter
+> {
+    constructor() {
+        super('documents_template');
     }
 }
 
@@ -172,6 +226,8 @@ class TagFmc extends BaseFmc<Tag, TagForCreate, TagForUpdate> {
 export const picFmc = new PictureFmc();
 export const docFmc = new DocumentFmc();
 export const docsFolderFmc = new DocumentsFolderFmc();
+export const docsTemplateFmc = new DocumnetsTemplateFmc();
 export const catFmc = new CategoryFmc();
 export const tagFmc = new TagFmc();
 //#endregion -------------------------- Exports --------------------------------
+

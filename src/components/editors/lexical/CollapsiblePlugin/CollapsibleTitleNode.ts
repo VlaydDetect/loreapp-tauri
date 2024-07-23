@@ -1,34 +1,23 @@
-/**
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- */
-
 import {
     $createParagraphNode,
     $isElementNode,
     DOMConversionMap,
     DOMConversionOutput,
     DOMExportOutput,
-    EditorConfig,
     ElementNode,
-    LexicalEditor,
     LexicalNode,
     RangeSelection,
     SerializedElementNode,
 } from 'lexical';
 
-import {$isCollapsibleContainerNode} from './CollapsibleContainerNode';
-import {$isCollapsibleContentNode} from './CollapsibleContentNode';
+import { $isCollapsibleContainerNode } from './CollapsibleContainerNode';
+import { $isCollapsibleContentNode } from './CollapsibleContentNode';
 
 type SerializedCollapsibleTitleNode = SerializedElementNode;
 
-export function convertSummaryElement(domNode: HTMLElement,): DOMConversionOutput | null {
-    const node = $createCollapsibleTitleNode();
-    return { node };
-}
+export const convertSummaryElement = (): DOMConversionOutput | null => ({
+    node: $createCollapsibleTitleNode(),
+});
 
 export class CollapsibleTitleNode extends ElementNode {
     static getType(): string {
@@ -39,40 +28,38 @@ export class CollapsibleTitleNode extends ElementNode {
         return new CollapsibleTitleNode(node.__key);
     }
 
-    createDOM(config: EditorConfig, editor: LexicalEditor): HTMLElement {
+    createDOM(): HTMLElement {
         const dom = document.createElement('summary');
         dom.classList.add('Collapsible__title');
         return dom;
     }
 
-    updateDOM(prevNode: CollapsibleTitleNode, dom: HTMLElement): boolean {
+    updateDOM(): boolean {
         return false;
     }
 
     static importDOM(): DOMConversionMap | null {
         return {
-            summary: (domNode: HTMLElement) => {
-                return {
-                    conversion: convertSummaryElement,
-                    priority: 1,
-                };
-            },
+            summary: () => ({
+                conversion: convertSummaryElement,
+                priority: 1,
+            }),
         };
     }
 
-    static importJSON(serializedNode: SerializedCollapsibleTitleNode,): CollapsibleTitleNode {
+    static importJSON(): CollapsibleTitleNode {
         return $createCollapsibleTitleNode();
     }
 
     exportDOM(): DOMExportOutput {
         const element = document.createElement('summary');
-        return {element};
+        return { element };
     }
 
     exportJSON(): SerializedCollapsibleTitleNode {
         return {
             ...super.exportJSON(),
-            type: 'collapsible-title',
+            type: this.getType(),
             version: 1,
         };
     }
@@ -86,9 +73,7 @@ export class CollapsibleTitleNode extends ElementNode {
         const containerNode = this.getParentOrThrow();
 
         if (!$isCollapsibleContainerNode(containerNode)) {
-            throw new Error(
-                'CollapsibleTitleNode expects to be child of CollapsibleContainerNode',
-            );
+            throw new Error('CollapsibleTitleNode expects to be child of CollapsibleContainerNode');
         }
 
         if (containerNode.getOpen()) {
@@ -102,16 +87,16 @@ export class CollapsibleTitleNode extends ElementNode {
             const firstChild = contentNode.getFirstChild();
             if ($isElementNode(firstChild)) {
                 return firstChild;
-            } else {
-                const paragraph = $createParagraphNode();
-                contentNode.append(paragraph);
-                return paragraph;
             }
-        } else {
+
             const paragraph = $createParagraphNode();
-            containerNode.insertAfter(paragraph, restoreSelection);
+            contentNode.append(paragraph);
             return paragraph;
         }
+
+        const paragraph = $createParagraphNode();
+        containerNode.insertAfter(paragraph, restoreSelection);
+        return paragraph;
     }
 }
 
@@ -119,6 +104,8 @@ export function $createCollapsibleTitleNode(): CollapsibleTitleNode {
     return new CollapsibleTitleNode();
 }
 
-export function $isCollapsibleTitleNode(node: LexicalNode | null | undefined): node is CollapsibleTitleNode {
+export function $isCollapsibleTitleNode(
+    node: LexicalNode | null | undefined,
+): node is CollapsibleTitleNode {
     return node instanceof CollapsibleTitleNode;
 }

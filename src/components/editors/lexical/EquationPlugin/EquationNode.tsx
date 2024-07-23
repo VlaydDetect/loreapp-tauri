@@ -1,11 +1,4 @@
-/**
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- */
-
+import React, { Suspense } from 'react';
 import type {
     DOMConversionMap,
     DOMConversionOutput,
@@ -15,11 +8,8 @@ import type {
     SerializedLexicalNode,
     Spread,
 } from 'lexical';
-import {$applyNodeReplacement, DecoratorNode, DOMExportOutput} from 'lexical';
-
+import { $applyNodeReplacement, DecoratorNode, DOMExportOutput } from 'lexical';
 import katex from 'katex';
-import * as React from 'react';
-import {Suspense} from 'react';
 
 const EquationComponent = React.lazy(() => import('./EquationComponent'));
 
@@ -30,6 +20,19 @@ export type SerializedEquationNode = Spread<
     },
     SerializedLexicalNode
 >;
+
+function convertEquationElement(domNode: HTMLElement): null | DOMConversionOutput {
+    let equation = domNode.getAttribute('data-lexical-equation');
+    const inline = domNode.getAttribute('data-lexical-inline') === 'true';
+    // Decode the equation from base64
+    equation = atob(equation || '');
+    if (equation) {
+        const node = $createEquationNode(equation, inline);
+        return { node };
+    }
+
+    return null;
+}
 
 export class EquationNode extends DecoratorNode<JSX.Element> {
     __equation: string;
@@ -50,10 +53,7 @@ export class EquationNode extends DecoratorNode<JSX.Element> {
     }
 
     static importJSON(serializedNode: SerializedEquationNode): EquationNode {
-        return $createEquationNode(
-            serializedNode.equation,
-            serializedNode.inline,
-        );
+        return $createEquationNode(serializedNode.equation, serializedNode.inline);
     }
 
     exportJSON(): SerializedEquationNode {
@@ -86,7 +86,7 @@ export class EquationNode extends DecoratorNode<JSX.Element> {
             throwOnError: false,
             trust: false,
         });
-        return {element};
+        return { element };
     }
 
     static importDOM(): DOMConversionMap | null {
@@ -125,12 +125,12 @@ export class EquationNode extends DecoratorNode<JSX.Element> {
         return this.__equation;
     }
 
-    setEquation(equation: string): void {
+    setEquation(equation: string) {
         const writable = this.getWritable();
         writable.__equation = equation;
     }
 
-    decorate(): JSX.Element {
+    decorate() {
         return (
             <Suspense fallback={null}>
                 <EquationComponent
@@ -143,20 +143,7 @@ export class EquationNode extends DecoratorNode<JSX.Element> {
     }
 }
 
-function convertEquationElement(domNode: HTMLElement): null | DOMConversionOutput {
-    let equation = domNode.getAttribute('data-lexical-equation');
-    const inline = domNode.getAttribute('data-lexical-inline') === 'true';
-    // Decode the equation from base64
-    equation = atob(equation || '');
-    if (equation) {
-        const node = $createEquationNode(equation, inline);
-        return {node};
-    }
-
-    return null;
-}
-
-export function $createEquationNode(equation = '', inline = false,): EquationNode {
+export function $createEquationNode(equation = '', inline = false): EquationNode {
     const equationNode = new EquationNode(equation, inline);
     return $applyNodeReplacement(equationNode);
 }

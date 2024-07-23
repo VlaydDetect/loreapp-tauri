@@ -1,37 +1,87 @@
 //! All model and controller for the Document type
 use super::bmc_base::{
-    Bmc, bmc_create, bmc_delete, bmc_get, bmc_list, bmc_update,
-    bmc_custom_multi_query, bmc_custom_solo_query,
+    bmc_create, bmc_custom_multi_query, bmc_delete, bmc_get, bmc_list, bmc_update, Bmc,
 };
 use super::store::x_take::XTake;
-use super::store::{Creatable, Filterable, Patchable, vec_to_surreal_value};
-use super::{vmap, ModelMutateResultData};
-use crate::model::bmc_graph::{GraphBmc, bmc_delete_edge, bmc_relate, bmc_rerelate_edge};
+use super::store::{vec_to_surreal_value, Creatable, Filterable, Patchable};
+use super::vmap;
 use crate::model::ctx::Ctx;
 use crate::model::{Error, Result};
-use crate::prelude::f;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use serde_with_macros::skip_serializing_none;
-use std::collections::HashMap;
+use std::fmt::{Display, Formatter};
+use std::str::FromStr;
 use std::sync::Arc;
 use surreal_qb::filter::{
-    finalize_list_options, FilterNode, FilterNodes, IntoFilterNodes, ListOptions, OpValsArray,
-    OpValsString,
+    finalize_list_options, FilterNodes, IntoFilterNodes, ListOptions, OpValsArray, OpValsString,
 };
 use surrealdb::sql::{Datetime, Object, Value};
-use ts_rs::TS;
+use ts_gen::TS;
 
 // TODO: Does it need an Option for Vec's if they can be empty?
 
+// #[skip_serializing_none]
+// #[derive(Debug, Serialize, Deserialize, Default, TS, Clone, PartialEq)]
+// #[ts(export)]
+// pub struct MarkdownDocument {}
+//
+// #[skip_serializing_none]
+// #[derive(Debug, Serialize, Deserialize, Default, TS, Clone, PartialEq)]
+// #[ts(export)]
+// pub struct CanvasDocument {}
+//
+// #[skip_serializing_none]
+// #[derive(Debug, Serialize, Deserialize, Default, TS, Clone, PartialEq)]
+// #[ts(export)]
+// pub struct LexicalDocument {}
+//
+// #[skip_serializing_none]
+// #[derive(Debug, Serialize, Deserialize, Default, TS, Clone, PartialEq)]
+// #[ts(export)]
+// pub struct PdfDocument {}
 //#region ---------- Document ----------
+// #[skip_serializing_none]
+// #[derive(Debug, Serialize, Deserialize, Default, TS, Clone, PartialEq)]
+// #[ts(export)]
+// pub enum Document {
+//     #[default]
+//     Markdown(MarkdownDocument),
+//     Canvas(CanvasDocument),
+//     Lexical(LexicalDocument),
+//     Pdf(PdfDocument),
+// }
+
+#[derive(
+    Debug,
+    Serialize,
+    Deserialize,
+    Default,
+    TS,
+    Clone,
+    PartialEq,
+    magic_utils::EnumString,
+    magic_utils::Display,
+)]
+#[ts(export)]
+pub enum DocumentType {
+    #[default]
+    Markdown,
+    Canvas,
+    Lexical,
+    Pdf,
+    Templated,
+}
+
 /// Name must be unique
+/// Documents with different types has different body content
 #[skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, Default, TS, Clone, PartialEq)]
-#[ts(export, export_to = "../src/interface/")]
+#[ts(export, rename_all = "camelCase")]
 pub struct Document {
     pub id: String,
     pub ctime: String,
+    pub r#type: DocumentType,
     pub title: String,
     pub body: Option<String>,
     pub tags: Option<Vec<String>>,
@@ -42,9 +92,22 @@ pub struct Document {
 impl TryFrom<Object> for Document {
     type Error = Error;
     fn try_from(mut val: Object) -> Result<Document> {
+        let mut doc_type = DocumentType::default();
+        if let Value::Strand(surrealdb::sql::Strand(type_obj)) = val.remove("type").ok_or(
+            Error::Other("Document doesn't contain 'type' field.".to_string()),
+        )? {
+            println!("try_from Document type: {:?}", type_obj);
+            doc_type = DocumentType::from_str(type_obj.as_str())?;
+        } else {
+            return Err(Error::Other(
+                "Document field 'type' has an incorrect type".to_string(),
+            ));
+        };
+
         let document = Document {
             id: val.x_take_val("id")?,
             ctime: val.x_take_val("ctime")?,
+            r#type: doc_type,
             title: val.x_take_val("title")?,
             body: val.x_take("body")?,
             tags: val.x_take("tags")?,
@@ -56,16 +119,17 @@ impl TryFrom<Object> for Document {
     }
 }
 
-/// Folder must be created with default tittle `New Document` + number of default named folders + 1
+/// Folder must be created with default tittle `New Document` + {number of default named folders + 1}
 #[derive(Debug, Serialize, Deserialize, Default, TS)]
-#[ts(export, export_to = "../src/interface/")]
+#[ts(export)]
 pub struct DocumentForCreate {
     pub title: String,
+    pub r#type: DocumentType,
 }
 
 impl From<DocumentForCreate> for Value {
     fn from(val: DocumentForCreate) -> Self {
-        let mut data = vmap!("title".into() => val.title.into());
+        let mut data = vmap!("title".into() => val.title.into(), "type".into() => val.r#type.to_string().into());
         Value::Object(data.into())
     }
 }
@@ -74,7 +138,7 @@ impl Creatable for DocumentForCreate {}
 
 #[skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, Default, TS)]
-#[ts(export, export_to = "../src/interface/")]
+#[ts(export)]
 pub struct DocumentForUpdate {
     pub title: Option<String>,
     pub body: Option<String>,
@@ -117,6 +181,7 @@ impl Patchable for DocumentForUpdate {}
 pub struct DocumentFilter {
     pub id: Option<OpValsString>,
     pub ctime: Option<OpValsString>,
+    pub r#type: Option<OpValsString>,
     pub title: Option<OpValsString>, // TODO: surrealdb full-text search
     pub body: Option<OpValsString>,  // TODO: surrealdb full-text search
     pub tags: Option<OpValsArray>,
@@ -170,7 +235,8 @@ impl DocumentBmc {
         END";
         let now = Datetime::default().to_string();
         let vars = vmap!("ctime".into() => now.into());
-        let result = bmc_custom_multi_query::<Document>(ctx, Self::ENTITY, sql, Some(vars.into())).await?;
+        let result =
+            bmc_custom_multi_query::<Document>(ctx, Self::ENTITY, sql, Some(vars.into())).await?;
 
         result
             .into_iter()

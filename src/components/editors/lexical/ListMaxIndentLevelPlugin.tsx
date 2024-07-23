@@ -1,15 +1,7 @@
-/**
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- */
-
-import type {RangeSelection} from 'lexical';
-
-import {$getListDepth, $isListItemNode, $isListNode} from '@lexical/list';
-import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
+import { useEffect } from 'react';
+import type { RangeSelection } from 'lexical';
+import { $getListDepth, $isListItemNode, $isListNode } from '@lexical/list';
+import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import {
     $getSelection,
     $isElementNode,
@@ -18,13 +10,12 @@ import {
     ElementNode,
     INDENT_CONTENT_COMMAND,
 } from 'lexical';
-import {useEffect} from 'react';
 
 type Props = Readonly<{
     maxDepth: number | null | undefined;
 }>;
 
-function getElementNodesInSelection(selection: RangeSelection,): Set<ElementNode> {
+function getElementNodesInSelection(selection: RangeSelection): Set<ElementNode> {
     const nodesInSelection = selection.getNodes();
 
     if (nodesInSelection.length === 0) {
@@ -34,21 +25,21 @@ function getElementNodesInSelection(selection: RangeSelection,): Set<ElementNode
         ]);
     }
 
-    return new Set(
-        nodesInSelection.map((n) => ($isElementNode(n) ? n : n.getParentOrThrow())),
-    );
+    return new Set(nodesInSelection.map(n => ($isElementNode(n) ? n : n.getParentOrThrow())));
 }
 
 function isIndentPermitted(maxDepth: number): boolean {
     const selection = $getSelection();
 
-    if (!$isRangeSelection(selection)) return false;
+    if (!$isRangeSelection(selection)) {
+        return false;
+    }
 
     const elementNodesInSelection: Set<ElementNode> = getElementNodesInSelection(selection);
 
     let totalDepth = 0;
 
-    for (const elementNode of elementNodesInSelection) {
+    elementNodesInSelection.forEach(elementNode => {
         if ($isListNode(elementNode)) {
             totalDepth = Math.max($getListDepth(elementNode) + 1, totalDepth);
         } else if ($isListItemNode(elementNode)) {
@@ -62,12 +53,12 @@ function isIndentPermitted(maxDepth: number): boolean {
 
             totalDepth = Math.max($getListDepth(parent) + 1, totalDepth);
         }
-    }
+    });
 
     return totalDepth <= maxDepth;
 }
 
-export default function ListMaxIndentLevelPlugin({maxDepth}: Props): null {
+export default function ListMaxIndentLevelPlugin({ maxDepth }: Props): null {
     const [editor] = useLexicalComposerContext();
 
     useEffect(() => {

@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
+import { observer } from 'mobx-react-lite';
 import Masonry from 'react-masonry-css';
 import { FolderUp, ImageUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import PictureView from './PictureView';
-import { CategoryNode, Picture } from '@/interface';
-import { picFmc } from '@/db';
-import { useModelEvents } from '@/event';
+import { CategoryNode } from '@/interface';
 import CategoriesTreeView from '@/components/CategoriesTreeView';
 import MediaUploadButton from '@/components/atom/MediaUploadButton';
+import { useMobXStores } from '@/context';
 
 const breakpointObj = {
     default: 4,
@@ -18,13 +18,13 @@ const breakpointObj = {
     500: 1,
 };
 
-const GalleryIndex = () => {
-    const [pictures, setPictures] = useState<Picture[]>([]);
+const GalleryIndex: React.FC = observer(() => {
+    const {
+        picturesStore: { picturesWithUrls, listAllPictures },
+    } = useMobXStores();
 
     useEffect(() => {
-        picFmc.list().then(content => {
-            setPictures(content);
-        });
+        listAllPictures();
     }, []);
 
     const categoriesTreeHandler = (node: CategoryNode) => {
@@ -36,17 +36,8 @@ const GalleryIndex = () => {
             },
         ];
 
-        picFmc.list(filter).then(content => {
-            setPictures(content);
-        });
+        listAllPictures(filter);
     };
-
-    useModelEvents<Picture>({
-        topic: 'picture',
-        idAttribute: 'id',
-        state: pictures,
-        setState: setPictures,
-    });
 
     return (
         <div className="tw-grid tw-grid-cols-4 tw-h-screen tw-w-screen">
@@ -65,13 +56,13 @@ const GalleryIndex = () => {
                             <FolderUp className="tw-ml-2" size={20} />
                         </Button>
                     </div>
-                    {pictures.length !== 0 ? (
+                    {picturesWithUrls.length !== 0 ? (
                         <Masonry
                             className="tw-flex tw-animate-slide-fwd"
                             breakpointCols={breakpointObj}
                         >
-                            {pictures.map(picture => (
-                                <PictureView key={picture.id} picture={picture} className="w-max" />
+                            {picturesWithUrls.map(picture => (
+                                <PictureView key={picture.id} picture={picture} />
                             ))}
                         </Masonry>
                     ) : (
@@ -86,6 +77,6 @@ const GalleryIndex = () => {
             </div>
         </div>
     );
-};
+});
 
 export default GalleryIndex;

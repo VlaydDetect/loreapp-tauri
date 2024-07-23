@@ -1,21 +1,29 @@
 //! All model and controller for the Tags and Categories type
 
-use std::collections::{BTreeMap, HashMap};
-use std::sync::Arc;
-use super::bmc_base::{Bmc, bmc_create, bmc_custom_multi_query, bmc_custom_solo_query, bmc_delete, bmc_get, bmc_list, bmc_update};
-use super::store::{Creatable, Filterable, Patchable, vec_to_surreal_value};
+use super::bmc_base::{
+    bmc_create, bmc_custom_multi_query, bmc_custom_solo_query, bmc_delete, bmc_get, bmc_list,
+    bmc_update, Bmc,
+};
 use super::store::x_take::XTake;
-use crate::model::{Document, DocumentFilter, Error, get_parent_id, Picture, PictureFilter, PictureForCreate, PictureForUpdate, Result, vmap};
-use surreal_qb::filter::{FilterNodes, finalize_list_options, ListOptions, OpValsArray, OpValsString};
-use serde::{Deserialize, Serialize};
-use serde_with_macros::skip_serializing_none;
-use surrealdb::sql::{Datetime, Object, Value};
-use ts_rs::TS;
+use super::store::{vec_to_surreal_value, Creatable, Filterable, Patchable};
 use crate::model::bmc_graph::{bmc_delete_edge, bmc_relate, bmc_rerelate_edge, GraphBmc};
 use crate::model::ctx::Ctx;
+use crate::model::{
+    get_parent_id, vmap, Document, DocumentFilter, Error, PictureFilter, PictureForCreate,
+    PictureForUpdate, PicturePrototype, Result,
+};
 use crate::prelude::f;
 use crate::utils::LabelValue;
 use rayon::prelude::*;
+use serde::{Deserialize, Serialize};
+use serde_with_macros::skip_serializing_none;
+use std::collections::{BTreeMap, HashMap};
+use std::sync::Arc;
+use surreal_qb::filter::{
+    finalize_list_options, FilterNodes, ListOptions, OpValsArray, OpValsString,
+};
+use surrealdb::sql::{Datetime, Object, Value};
+use ts_gen::TS;
 
 //#region -------------------------------- Categories --------------------------------
 //#region -------------------------------- Relation Table --------------------------------
@@ -40,7 +48,7 @@ impl TryFrom<Object> for Categories {
 
 #[skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, Default, TS, Clone)]
-#[ts(export, export_to = "../src/interface/")]
+#[ts(export)]
 pub struct CategoryWithParent {
     pub category: Category,
     pub parent: Option<String>,
@@ -65,24 +73,26 @@ impl TryFrom<Object> for CategoryWithParent {
 }
 
 #[derive(Debug, Serialize, Default, TS, Clone, PartialEq)]
-#[ts(export, export_to = "../src/interface/")]
+#[ts(export)]
 pub struct CategoryNode {
     id: String,
     ctime: String,
     name: String,
-    #[ts(type="CategoryNode[]")]
-    children: Vec<CategoryNode>
+    #[ts(type = "CategoryNode[]")]
+    children: Vec<CategoryNode>,
 }
 
 #[derive(Debug, Serialize, Default, TS, PartialEq)]
-#[ts(export, export_to = "../src/interface/")]
+#[ts(export)]
 pub struct CategoriesTree {
-    nodes: Vec<CategoryNode>
+    nodes: Vec<CategoryNode>,
 }
 
 pub fn build_categories_tree(mut cwps: Vec<CategoryWithParent>) -> CategoriesTree {
     fn recursive_loop<'a>(node: &'a mut CategoryNode, id: &String) -> Option<&'a mut CategoryNode> {
-        if (node.id.eq(id)) { return Some(node); }
+        if (node.id.eq(id)) {
+            return Some(node);
+        }
 
         for child in node.children.iter_mut() {
             if let Some(find) = recursive_loop(child, id) {
@@ -97,12 +107,15 @@ pub fn build_categories_tree(mut cwps: Vec<CategoryWithParent>) -> CategoriesTre
     let mut root_ids = Vec::<String>::new();
 
     for cwp in &cwps {
-        categories_map.insert(cwp.category.id.clone(), CategoryNode {
-            id: cwp.category.id.clone(),
-            name: cwp.category.name.clone(),
-            ctime: cwp.category.ctime.clone(),
-            children: vec![],
-        });
+        categories_map.insert(
+            cwp.category.id.clone(),
+            CategoryNode {
+                id: cwp.category.id.clone(),
+                name: cwp.category.name.clone(),
+                ctime: cwp.category.ctime.clone(),
+                children: vec![],
+            },
+        );
         if cwp.parent.is_none() {
             root_ids.push(cwp.category.id.clone());
         }
@@ -133,16 +146,14 @@ pub fn build_categories_tree(mut cwps: Vec<CategoryWithParent>) -> CategoriesTre
         }
     }
 
-    CategoriesTree {
-        nodes: root_nodes,
-    }
+    CategoriesTree { nodes: root_nodes }
 }
 //#endregion -------------------------------- Relation Table --------------------------------
 
 //#region -------------------------------- Category Table --------------------------------
 #[skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, Default, TS, Clone)]
-#[ts(export, export_to = "../src/interface/")]
+#[ts(export)]
 pub struct Category {
     pub id: String,
     pub ctime: String,
@@ -163,7 +174,7 @@ impl TryFrom<Object> for Category {
 }
 
 #[derive(Debug, Serialize, Deserialize, Default, TS)]
-#[ts(export, export_to = "../src/interface/")]
+#[ts(export)]
 pub struct CategoryForCreate {
     name: String,
 }
@@ -179,7 +190,7 @@ impl Creatable for CategoryForCreate {}
 
 #[skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, Default, TS)]
-#[ts(export, export_to = "../src/interface/")]
+#[ts(export)]
 pub struct CategoryForUpdate {
     name: Option<String>,
 }
@@ -198,6 +209,7 @@ impl Patchable for CategoryForUpdate {}
 
 #[derive(FilterNodes, Debug, Deserialize, Default)]
 pub struct CategoryFilter {
+    pub id: Option<OpValsString>,
     pub ctime: Option<OpValsString>,
     pub name: Option<OpValsString>,
 }
@@ -231,7 +243,10 @@ impl CategoryBmc {
         bmc_delete(ctx, Self::ENTITY, id).await
     }
 
-    pub async fn list(ctx: Arc<Ctx>, filters: Option<Vec<CategoryFilter>>) -> Result<Vec<Category>> {
+    pub async fn list(
+        ctx: Arc<Ctx>,
+        filters: Option<Vec<CategoryFilter>>,
+    ) -> Result<Vec<Category>> {
         let list_options = ListOptions {
             limit: None,
             offset: None,
@@ -250,7 +265,8 @@ impl CategoryBmc {
 
         let now = Datetime::default().to_string();
         let vars = vmap!("ctime".into() => now.into());
-        let result = bmc_custom_multi_query::<Category>(ctx, Self::ENTITY, sql, Some(vars.into())).await?;
+        let result =
+            bmc_custom_multi_query::<Category>(ctx, Self::ENTITY, sql, Some(vars.into())).await?;
 
         result
             .into_iter()
@@ -258,26 +274,44 @@ impl CategoryBmc {
             .ok_or(Error::Store(crate::model::store::Error::ResponseIsEmpty))
     }
 
-    pub async fn attach_subcategory(ctx: Arc<Ctx>, id: &str, sub_id: &str) -> Result<CategoriesTree> {
+    pub async fn attach_subcategory(
+        ctx: Arc<Ctx>,
+        id: &str,
+        sub_id: &str,
+    ) -> Result<CategoriesTree> {
         // FIXME: check if subcategory already attached to this category
         bmc_relate::<Categories>(ctx.clone(), Self::RELATION_ENTITY, id, sub_id).await?;
         Self::list_tree(ctx).await
     }
 
-    pub async fn detach_subcategory(ctx: Arc<Ctx>, id: &str, sub_id: &str) -> Result<CategoriesTree> {
+    pub async fn detach_subcategory(
+        ctx: Arc<Ctx>,
+        id: &str,
+        sub_id: &str,
+    ) -> Result<CategoriesTree> {
         bmc_delete_edge::<Categories>(ctx.clone(), Self::RELATION_ENTITY, id, sub_id).await?;
         Self::list_tree(ctx).await
     }
 
-    pub async fn reattach_subcategory(ctx: Arc<Ctx>, id: &str, from_id: Option<&str>, to_id: Option<&str>) -> Result<CategoriesTree> {
-        bmc_rerelate_edge::<Categories>(ctx.clone(), Self::RELATION_ENTITY, id, from_id, to_id).await?;
+    pub async fn reattach_subcategory(
+        ctx: Arc<Ctx>,
+        id: &str,
+        from_id: Option<&str>,
+        to_id: Option<&str>,
+    ) -> Result<CategoriesTree> {
+        bmc_rerelate_edge::<Categories>(ctx.clone(), Self::RELATION_ENTITY, id, from_id, to_id)
+            .await?;
         Self::list_tree(ctx).await
     }
 
     pub async fn list_tree(ctx: Arc<Ctx>) -> Result<CategoriesTree> {
-        let sql = f!("SELECT *, <-{}<-category.id AS parent FROM category ORDER BY id ASC;", Self::RELATION_ENTITY).into_boxed_str();
-        // let vars = vmap!["tb".into() => Self::ENTITY.into()];
-        let cwps = bmc_custom_solo_query::<CategoryWithParent>(ctx, Self::ENTITY, &sql, None).await?;
+        let sql = f!(
+            "SELECT *, <-{}<-category.id AS parent FROM category ORDER BY id ASC;",
+            Self::RELATION_ENTITY
+        )
+        .into_boxed_str();
+        let cwps =
+            bmc_custom_solo_query::<CategoryWithParent>(ctx, Self::ENTITY, &sql, None).await?;
         let tree = build_categories_tree(cwps);
         Ok(tree)
     }
@@ -289,7 +323,7 @@ impl CategoryBmc {
 //#region -------------------------------- Tag Table --------------------------------
 #[skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, Default, TS, Clone)]
-#[ts(export, export_to = "../src/interface/")]
+#[ts(export)]
 pub struct Tag {
     id: String,
     ctime: String,
@@ -310,7 +344,7 @@ impl TryFrom<Object> for Tag {
 }
 
 #[derive(Debug, Serialize, Deserialize, Default, TS)]
-#[ts(export, export_to = "../src/interface/")]
+#[ts(export)]
 pub struct TagForCreate {
     name: String,
 }
@@ -326,7 +360,7 @@ impl Creatable for TagForCreate {}
 
 #[skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, Default, TS)]
-#[ts(export, export_to = "../src/interface/")]
+#[ts(export)]
 pub struct TagForUpdate {
     name: Option<String>,
 }
@@ -345,6 +379,7 @@ impl Patchable for TagForUpdate {}
 
 #[derive(FilterNodes, Debug, Deserialize, Default)]
 pub struct TagFilter {
+    pub id: Option<OpValsString>,
     pub ctime: Option<OpValsString>,
     pub name: Option<OpValsString>,
 }
@@ -375,7 +410,11 @@ impl TagBmc {
         bmc_delete(ctx, Self::ENTITY, id).await
     }
 
-    pub async fn list(ctx: Arc<Ctx>, filters: Option<Vec<TagFilter>>, list_options: Option<ListOptions>) -> Result<Vec<Tag>> {
+    pub async fn list(
+        ctx: Arc<Ctx>,
+        filters: Option<Vec<TagFilter>>,
+        list_options: Option<ListOptions>,
+    ) -> Result<Vec<Tag>> {
         let list_options = finalize_list_options(list_options)?;
         bmc_list(ctx, Self::ENTITY, filters, list_options).await
     }
@@ -396,7 +435,7 @@ mod tests {
                     name: "C1".into(),
                     ctime: "".into(),
                 },
-                parent: None
+                parent: None,
             },
             CategoryWithParent {
                 category: Category {
@@ -404,7 +443,7 @@ mod tests {
                     name: "C2".into(),
                     ctime: "".into(),
                 },
-                parent: Some("category:8aevtugsorhcjs3gcv3c".into())
+                parent: Some("category:8aevtugsorhcjs3gcv3c".into()),
             },
             CategoryWithParent {
                 category: Category {
@@ -412,34 +451,28 @@ mod tests {
                     name: "SC1".into(),
                     ctime: "".into(),
                 },
-                parent: Some("category:p0t3l8nfkxwd064qhjkh".into())
+                parent: Some("category:p0t3l8nfkxwd064qhjkh".into()),
             },
         ];
 
         let result_tree = build_categories_tree(cwps);
         let expected_result = CategoriesTree {
-            nodes: vec![
-                CategoryNode {
-                    id: "category:8aevtugsorhcjs3gcv3c".into(),
+            nodes: vec![CategoryNode {
+                id: "category:8aevtugsorhcjs3gcv3c".into(),
+                ctime: "".into(),
+                name: "C1".into(),
+                children: vec![CategoryNode {
+                    id: "category:p0t3l8nfkxwd064qhjkh".into(),
+                    name: "C2".into(),
                     ctime: "".into(),
-                    name: "C1".into(),
-                    children: vec![
-                        CategoryNode {
-                            id: "category:p0t3l8nfkxwd064qhjkh".into(),
-                            name: "C2".into(),
-                            ctime: "".into(),
-                            children: vec![
-                                CategoryNode {
-                                    id: "category:qmmro25o7cuwxhotgtys".into(),
-                                    name: "SC1".into(),
-                                    ctime: "".into(),
-                                    children: vec![]
-                                }
-                            ]
-                        }
-                    ]
-                }
-            ]
+                    children: vec![CategoryNode {
+                        id: "category:qmmro25o7cuwxhotgtys".into(),
+                        name: "SC1".into(),
+                        ctime: "".into(),
+                        children: vec![],
+                    }],
+                }],
+            }],
         };
 
         assert_eq!(result_tree, expected_result);

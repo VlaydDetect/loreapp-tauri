@@ -1,7 +1,5 @@
 select {
     appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
     background-color: transparent;
     border: none;
     padding: 0 1em 0 0;
@@ -10,7 +8,6 @@ select {
     font-size: inherit;
     cursor: inherit;
     line-height: inherit;
-
     z-index: 1;
     outline: none;
 }
@@ -30,5 +27,5 @@ select {
     font-size: 1rem;
     cursor: pointer;
     line-height: 1.4;
-    background: linear-gradient(to bottom, #ffffff 0%, #e5e5e5 100%);
+    background: linear-gradient(to bottom, #fff 0%, #e5e5e5 100%);
 }

@@ -1,18 +1,7 @@
-/**
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- */
-
-import {useEffect, useState} from 'react';
-import {exportToSvg} from '@excalidraw/excalidraw';
-import {
-    ExcalidrawElement,
-    NonDeleted,
-} from '@excalidraw/excalidraw/types/element/types';
-import {AppState, BinaryFiles} from '@excalidraw/excalidraw/types/types';
+import React, { useEffect, useState } from 'react';
+import { exportToSvg } from '@excalidraw/excalidraw';
+import { ExcalidrawElement, NonDeleted } from '@excalidraw/excalidraw/types/element/types';
+import { AppState, BinaryFiles } from '@excalidraw/excalidraw/types/types';
 
 type ImageType = 'svg' | 'canvas';
 
@@ -26,11 +15,11 @@ type Props = {
      */
     className?: string;
     /**
-     * The excalidraw elements to be rendered as an image
+     * The Excalidraw elements to be rendered as an image
      */
     elements: NonDeleted<ExcalidrawElement>[];
     /**
-     * The excalidraw elements to be rendered as an image
+     * The Excalidraw elements to be rendered as an image
      */
     files: BinaryFiles;
     /**
@@ -40,7 +29,7 @@ type Props = {
     /**
      * The ref object to be used to render the image
      */
-    imageContainerRef: {current: null | HTMLDivElement};
+    imageContainerRef: { current: null | HTMLDivElement };
     /**
      * The type of image to be rendered
      */
@@ -57,7 +46,7 @@ type Props = {
 
 // exportToSvg has fonts from excalidraw.com
 // We don't want them to be used in open source
-const removeStyleFromSvg_HACK = (svg: SVGElement) => {
+const removeStyleFromSvg = (svg: SVGElement) => {
     const styleTag = svg?.firstElementChild?.firstElementChild;
 
     // Generated SVG is getting double-sized by height and width attributes
@@ -76,9 +65,15 @@ const removeStyleFromSvg_HACK = (svg: SVGElement) => {
 
 /**
  * @explorer-desc
- * A component for rendering excalidraw elements as a static image
+ * A component for rendering Excalidraw elements as a static image
  */
-export default function ExcalidrawImage({elements, files, imageContainerRef, appState, rootClassName = null,}: Props) {
+const ExcalidrawImage: React.FC<Props> = ({
+    elements,
+    files,
+    imageContainerRef,
+    appState,
+    rootClassName = null,
+}) => {
     const [Svg, setSvg] = useState<SVGElement | null>(null);
 
     useEffect(() => {
@@ -88,7 +83,7 @@ export default function ExcalidrawImage({elements, files, imageContainerRef, app
                 elements,
                 files,
             });
-            removeStyleFromSvg_HACK(svg);
+            removeStyleFromSvg(svg);
 
             svg.setAttribute('width', '100%');
             svg.setAttribute('height', '100%');
@@ -103,7 +98,10 @@ export default function ExcalidrawImage({elements, files, imageContainerRef, app
         <div
             ref={imageContainerRef}
             className={rootClassName ?? ''}
-            dangerouslySetInnerHTML={{__html: Svg?.outerHTML ?? ''}}
+            // eslint-disable-next-line react/no-danger
+            dangerouslySetInnerHTML={{ __html: Svg?.outerHTML ?? '' }}
         />
     );
-}
+};
+
+export default ExcalidrawImage;

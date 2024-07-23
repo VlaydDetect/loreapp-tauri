@@ -3,7 +3,7 @@ import TemplatesEditorProvider from './editor-provider';
 import { EditorElement } from './types';
 import EditorNavigation from './editor-navigation';
 import EditorSidebar from './editor-sidebar';
-import Editor from './editor/index';
+import Editor from './editor';
 
 type Props = {
     templateId: string;

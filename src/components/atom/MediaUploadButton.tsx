@@ -1,23 +1,24 @@
 import React from 'react';
 import { useModal } from '@/context/ModalProvider';
 import { Button, ButtonProps } from '@/components/ui/button';
-import Modal from '@/components/atom/Modal';
+import { DialogModal } from '@/components/atom/modal';
 import UploadMediaFrom from '@/components/atom/UploadMediaFrom';
 
 const MediaUploadButton: React.FC<Omit<ButtonProps, 'onClick'>> = props => {
+    const { children, ...other } = props;
     const { setOpen } = useModal();
 
     const handleClick = () => {
         setOpen(
-            <Modal title="Upload Media" subtitle="Upload a file to your media bucket">
+            <DialogModal title="Upload Media" subtitle="Upload a file to your media bucket">
                 <UploadMediaFrom />
-            </Modal>,
+            </DialogModal>,
         );
     };
 
     return (
-        <Button {...props} onClick={() => handleClick()}>
-            Upload
+        <Button {...other} onClick={() => handleClick()}>
+            {children}
         </Button>
     );
 };

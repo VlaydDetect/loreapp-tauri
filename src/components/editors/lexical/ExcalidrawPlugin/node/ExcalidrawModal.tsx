@@ -1,25 +1,12 @@
-/**
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- */
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 import './ExcalidrawModal.css';
-
-import {Excalidraw} from '@excalidraw/excalidraw';
-import {
-    AppState,
-    BinaryFiles,
-    ExcalidrawImperativeAPI,
-} from '@excalidraw/excalidraw/types/types';
-import {ReactPortal, useEffect, useLayoutEffect, useRef, useState} from 'react';
-import {createPortal} from 'react-dom';
+import { Excalidraw } from '@excalidraw/excalidraw';
+import { AppState, BinaryFiles, ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types/types';
 
 import Button from '../../ui/Button';
 import Modal from '../../ui/Modal';
-import {ExcalidrawElement} from "@excalidraw/excalidraw/types/element/types";
 
 export type ExcalidrawElementFragment = {
     isDeleted?: boolean;
@@ -30,7 +17,7 @@ type Props = {
     /**
      * The initial set of elements to draw into the scene
      */
-    initialElements: ReadonlyArray<ExcalidrawElement>; // TODO: ExcalidrawElementFragment?
+    initialElements: ReadonlyArray<ExcalidrawElementFragment>;
     /**
      * The initial set of elements to draw into the scene
      */
@@ -48,29 +35,48 @@ type Props = {
      */
     onClose: () => void;
     /**
-     * Completely remove excalidraw component
+     * Completely remove Excalidraw component
      */
     onDelete: () => void;
     /**
      * Callback when the save button is clicked
      */
     onSave: (
-        elements: ReadonlyArray<ExcalidrawElement>, // TODO: ExcalidrawElementFragment?
+        elements: ReadonlyArray<ExcalidrawElementFragment>,
         appState: Partial<AppState>,
         files: BinaryFiles,
     ) => void;
 };
 
+export const useCallbackRefState = () => {
+    const [refValue, setRefValue] = React.useState<ExcalidrawImperativeAPI | null>(null);
+    const refCallback = React.useCallback(
+        (value: ExcalidrawImperativeAPI | null) => setRefValue(value),
+        [],
+    );
+    return [refValue, refCallback] as const;
+};
+
 /**
  * @explorer-desc
- * A component which renders a modal with excalidraw (a painting app)
+ * A component which renders a modal with Excalidraw (a painting app)
  * which can be used to export an editable image
  */
-export default function ExcalidrawModal({closeOnClickOutside = false, onSave, initialElements, initialAppState, initialFiles, isShown = false, onDelete, onClose,}: Props): ReactPortal | null {
+const ExcalidrawModal: React.FC<Props> = ({
+    closeOnClickOutside = false,
+    onSave,
+    initialElements,
+    initialAppState,
+    initialFiles,
+    isShown = false,
+    onDelete,
+    onClose,
+}) => {
     const excaliDrawModelRef = useRef<HTMLDivElement | null>(null);
-    const excaliDrawSceneRef = useRef<ExcalidrawImperativeAPI>(null);
+    const [excalidrawAPI, excalidrawAPIRefCallback] = useCallbackRefState();
     const [discardModalOpen, setDiscardModalOpen] = useState(false);
-    const [elements, setElements] = useState(initialElements);
+    const [elements, setElements] =
+        useState<ReadonlyArray<ExcalidrawElementFragment>>(initialElements);
     const [files, setFiles] = useState<BinaryFiles>(initialFiles);
 
     useEffect(() => {
@@ -128,8 +134,8 @@ export default function ExcalidrawModal({closeOnClickOutside = false, onSave, in
     }, [elements, files, onDelete]);
 
     const save = () => {
-        if (elements.filter((el) => !el.isDeleted).length > 0) {
-            const appState = excaliDrawSceneRef?.current?.getAppState();
+        if (elements.filter(el => !el.isDeleted).length > 0) {
+            const appState = excalidrawAPI?.getAppState();
             // We only need a subset of the state
             const partialState: Partial<AppState> = {
                 exportBackground: appState?.exportBackground,
@@ -152,49 +158,48 @@ export default function ExcalidrawModal({closeOnClickOutside = false, onSave, in
     };
 
     const discard = () => {
-        if (elements.filter((el) => !el.isDeleted).length === 0) {
+        if (elements.filter(el => !el.isDeleted).length === 0) {
             // delete node if the scene is clear
             onDelete();
         } else {
-            //Otherwise, show confirmation dialog before closing
+            // Otherwise, show confirmation dialog before closing
             setDiscardModalOpen(true);
         }
     };
 
-    function ShowDiscardDialog() {
-        return (
-            <Modal
-                title="Discard"
-                onClose={() => {
-                    setDiscardModalOpen(false);
-                }}
-                closeOnClickOutside={false}>
-                Are you sure you want to discard the changes?
-                <div className="ExcalidrawModal__discardModal">
-                    <Button
-                        onClick={() => {
-                            setDiscardModalOpen(false);
-                            onClose();
-                        }}>
-                        Discard
-                    </Button>{' '}
-                    <Button
-                        onClick={() => {
-                            setDiscardModalOpen(false);
-                        }}>
-                        Cancel
-                    </Button>
-                </div>
-            </Modal>
-        );
-    }
+    const ShowDiscardDialog = () => (
+        <Modal
+            title="Discard"
+            onClose={() => {
+                setDiscardModalOpen(false);
+            }}
+            closeOnClickOutside={false}
+        >
+            Are you sure you want to discard the changes?
+            <div className="ExcalidrawModal__discardModal">
+                <Button
+                    onClick={() => {
+                        setDiscardModalOpen(false);
+                        onClose();
+                    }}
+                >
+                    Discard
+                </Button>{' '}
+                <Button
+                    onClick={() => {
+                        setDiscardModalOpen(false);
+                    }}
+                >
+                    Cancel
+                </Button>
+            </div>
+        </Modal>
+    );
 
-    if (isShown === false) {
-        return null;
-    }
+    if (!isShown) return null;
 
     const onChange = (
-        els: ReadonlyArray<ExcalidrawElement>, // TODO: ExcalidrawElementFragment?
+        els: ReadonlyArray<ExcalidrawElementFragment>,
         _: AppState,
         fls: BinaryFiles,
     ) => {
@@ -202,25 +207,16 @@ export default function ExcalidrawModal({closeOnClickOutside = false, onSave, in
         setFiles(fls);
     };
 
-    // This is a hacky work-around for excalidraw + Vite.
-    // In DEV, Vite pulls this in fine, in prod it doesn't. It seems
-    // like a module resolution issue with ESM vs CJS?
-    const _Excalidraw = Excalidraw
-        // Excalidraw.$$typeof != null ? Excalidraw : Excalidraw.default; // TODO: Issue: https://github.com/excalidraw/excalidraw/issues/6166, fix in vite build?!
-
     return createPortal(
         <div className="ExcalidrawModal__overlay" role="dialog">
-            <div
-                className="ExcalidrawModal__modal"
-                ref={excaliDrawModelRef}
-                tabIndex={-1}>
+            <div className="ExcalidrawModal__modal" ref={excaliDrawModelRef} tabIndex={-1}>
                 <div className="ExcalidrawModal__row">
                     {discardModalOpen && <ShowDiscardDialog />}
-                    <_Excalidraw
+                    <Excalidraw
                         onChange={onChange}
-                        ref={excaliDrawSceneRef}
+                        excalidrawAPI={excalidrawAPIRefCallback}
                         initialData={{
-                            appState: initialAppState || {isLoading: false},
+                            appState: initialAppState || { isLoading: false },
                             elements: initialElements,
                             files: initialFiles,
                         }}
@@ -238,4 +234,6 @@ export default function ExcalidrawModal({closeOnClickOutside = false, onSave, in
         </div>,
         document.body,
     );
-}
+};
+
+export default ExcalidrawModal;

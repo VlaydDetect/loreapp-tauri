@@ -5,26 +5,34 @@ type Props = {
     name: string;
     isRenaming: boolean;
     submitCallback: (newName: string) => void | Promise<void>;
+    escapeCallback: () => void | Promise<void>;
 };
 
-const RenameInput: React.FC<Props> = ({ submitCallback, name, isRenaming }) => {
+const RenameInput: React.FC<Props> = ({ submitCallback, name, isRenaming, escapeCallback }) => {
     const [newName, setNewName] = useState(name);
+
+    const handleKeyUp = async (event: React.KeyboardEvent) => {
+        if (event.key === 'Enter') {
+            submitCallback(newName);
+        }
+
+        if (event.key === 'Escape') {
+            escapeCallback();
+        }
+    };
 
     return (
         <span>
             {isRenaming ? (
                 <input
-                    className="tw-h-full tw-w-1/2 tw-bg-transparent"
-                    type="text"
                     autoFocus
+                    className="tw-h-full tw-w-1/2 tw-bg-transparent focus:tw-outline-none"
+                    type="text"
                     value={newName}
+                    onClick={event => event.stopPropagation()}
                     onFocus={event => event.target.select()}
                     onChange={event => setNewName(event.target.value)}
-                    onKeyUp={async event => {
-                        if (event.key === 'Enter') {
-                            submitCallback(newName);
-                        }
-                    }}
+                    onKeyUp={handleKeyUp}
                 />
             ) : (
                 name
